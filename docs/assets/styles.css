@@ -973,3 +973,45 @@ body::after { inset: 0; animation: none; mix-blend-mode: normal; opacity: .035; 
 @media (max-width: 860px) { .hero__cap { margin-top: 18px; } }
 .hint-touch { display: none; }
 @media (hover: none) { .hint-fine { display: none; } .hint-touch { display: inline; } }
+
+/* click-to-reveal: veil over the panorama, original photo as a taped print */
+.reveal-host { position: relative; display: block; cursor: pointer; }
+.reveal-host > img { display: block; }
+.pano.is-walking .reveal-host { display: inline-block; }
+.reveal-host--cyl { display: block; }
+.reveal-host--cyl > img.cyl__img { width: 100%; height: 100%; max-width: none; max-height: none; }
+.reveal__veil { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; overflow: visible; }
+.reveal__shade { fill: rgba(5, 7, 10, 0); transition: fill .35s var(--ease); }
+.reveal__edge { fill: none; stroke: rgba(255, 214, 140, 0); stroke-width: 1.6; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; transition: stroke .35s; }
+.is-revealing > .reveal__veil .reveal__shade { fill: rgba(5, 7, 10, .62); }
+.is-revealing > .reveal__veil .reveal__edge { stroke: rgba(255, 214, 140, .95); animation: march 1.2s linear infinite; }
+@keyframes march { to { stroke-dashoffset: -24; } }
+.reveal__card {
+  position: absolute; z-index: 6; margin: 0; padding: 8px 8px 0; background: #fbf7f0; color: var(--paper-ink); cursor: default;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, .2), 0 26px 50px -14px rgba(0, 0, 0, .85); transform-origin: 50% 60%;
+}
+.reveal__card[hidden] { display: none; }
+.reveal__card.is-in { animation: printIn .55s var(--ease); }
+@keyframes printIn { from { opacity: 0; transform: translateY(14px) rotate(-3deg) scale(.92); } to { opacity: 1; transform: rotate(-.8deg); } }
+.reveal__card.is-in { transform: rotate(-.8deg); }
+.reveal__card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; filter: sepia(.08); }
+.reveal__card figcaption { font-size: 9px; color: #8a7e72; padding: 6px 2px 8px; letter-spacing: .05em; line-height: 1.45; }
+.reveal__card figcaption b { color: var(--paper-ink); font-weight: 500; letter-spacing: .14em; margin-right: 6px; }
+.reveal__card figcaption em { font-style: normal; color: var(--wine); }
+.reveal__tape { position: absolute; top: -10px; left: 50%; width: 64px; height: 20px; transform: translateX(-50%) rotate(-3deg); background: rgba(232, 220, 190, .7); }
+.reveal__close, .reveal__btn { position: absolute; border: 0; cursor: pointer; font: 500 16px/1 var(--mono); color: #fff; background: rgba(16, 23, 33, .78); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; }
+.reveal__close { top: 12px; right: 12px; }
+.reveal__btn { top: calc(8px + (100% - 52px) / 2 - 14px); }
+.reveal__prev { left: 12px; } .reveal__next { right: 12px; }
+.reveal__close:focus-visible, .reveal__btn:focus-visible { outline: 2px solid var(--gold); }
+.reveal__chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.reveal__chips-label { color: var(--muted); font-size: 10px; margin-right: 2px; }
+.reveal__chip { font-size: 10.5px; color: var(--gold); background: transparent; border: 1px solid rgba(196, 164, 122, .45); padding: 6px 8px; border-radius: 2px; cursor: pointer; }
+.reveal__chip[aria-pressed="true"] { background: var(--gold); color: #17110c; }
+.lensring .reveal__chips { grid-column: 1 / -1; }
+.plate .reveal__card { z-index: 7; }
+@media (max-width: 560px) { .reveal__card figcaption span { display: none; } }
+@media print { .reveal__veil, .reveal__card, .reveal__chips { display: none !important; } }
+.plate { overflow: hidden; }
+.plate.is-revealing { overflow: visible; }
+.plate > .reveal__veil { overflow: hidden; }

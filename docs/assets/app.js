@@ -164,6 +164,118 @@
   if (!D) return;
 
 
+
+  /* ---------- click a panorama to reveal the photo each part came from */
+  const pointIn = (pt, poly) => {
+    let c = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  const centerOf = poly => poly.reduce((a, q) => [a[0] + q[0] / poly.length, a[1] + q[1] / poly.length], [0, 0]);
+
+  // host: positioned box exactly covering the panorama image. frames: [{poly, src, file, exif, ref}]
+  function makeReveal(host, frames, { chips } = {}) {
+    const svg = svgEl('svg', { class: 'reveal__veil', viewBox: '0 0 1 1', preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+    const shade = svgEl('path', { class: 'reveal__shade', 'fill-rule': 'evenodd' });
+    const edge = svgEl('polygon', { class: 'reveal__edge' });
+    svg.append(shade, edge);
+    const card = document.createElement('figure');
+    card.className = 'reveal__card';
+    card.hidden = true;
+    card.innerHTML = '<span class="reveal__tape" aria-hidden="true"></span><img alt=""><figcaption class="mono"></figcaption>' +
+      '<button type="button" class="reveal__btn reveal__prev" aria-label="Previous frame">&#8249;</button>' +
+      '<button type="button" class="reveal__btn reveal__next" aria-label="Next frame">&#8250;</button>' +
+      '<button type="button" class="reveal__close" aria-label="Close">&times;</button>';
+    host.append(svg, card);
+    const cardImg = $('img', card), cap = $('figcaption', card);
+    let list = frames, open = -1;
+    const chipBtns = [];
+    if (chips) {
+      chips.replaceChildren();
+      const label = document.createElement('span');
+      label.className = 'mono reveal__chips-label';
+      label.textContent = 'frames';
+      chips.append(label);
+    }
+    const buildChips = () => {
+      if (!chips) return;
+      chipBtns.splice(0).forEach(b => b.remove());
+      list.forEach((f, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'reveal__chip mono';
+        b.textContent = String(i + 1).padStart(2, '0');
+        b.setAttribute('aria-pressed', 'false');
+        b.setAttribute('aria-label', `Show frame ${i + 1}, ${f.file}`);
+        b.addEventListener('click', () => (open === i ? hide() : show(i)));
+        chips.append(b);
+        chipBtns.push(b);
+      });
+    };
+    const place = () => {
+      if (open < 0) return;
+      const W = host.clientWidth, H = host.clientHeight;
+      const cw = Math.max(160, Math.min(420, W * .34, (H * .9 - 44) / .75));
+      const [cx] = centerOf(list[open].poly);
+      card.style.width = `${cw}px`;
+      card.style.left = `${Math.max(8, Math.min(W - cw - 8, cx * W - cw / 2))}px`;
+      card.style.top = `${Math.max(6, (H - (cw * .75 + 44)) / 2)}px`;
+    };
+    function show(i) {
+      open = (i + list.length) % list.length;
+      const f = list[open];
+      const pts = f.poly.map(q => q.join(',')).join(' ');
+      shade.setAttribute('d', 'M-1 -1H2V2H-1Z M' + f.poly.map(q => q.join(' ')).join(' L') + 'Z');
+      edge.setAttribute('points', pts);
+      host.classList.add('is-revealing');
+      cardImg.src = f.src;
+      cardImg.alt = `Original photo ${open + 1}: ${f.file}`;
+      cap.innerHTML = `<b>FRAME ${String(open + 1).padStart(2, '0')}</b> ${f.file}${f.ref ? ' <em>reference</em>' : ''}<br><span>${f.exif}</span>`;
+      card.hidden = false;
+      card.classList.remove('is-in');
+      void card.offsetWidth;
+      card.classList.add('is-in');
+      chipBtns.forEach((b, k) => b.setAttribute('aria-pressed', String(k === open)));
+      place();
+    }
+    function hide() {
+      open = -1;
+      host.classList.remove('is-revealing');
+      card.hidden = true;
+      chipBtns.forEach(b => b.setAttribute('aria-pressed', 'false'));
+    }
+    const at = e => {
+      const r = host.getBoundingClientRect();
+      const pt = [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
+      const hits = list.map((f, i) => i).filter(i => pointIn(pt, list[i].poly));
+      if (!hits.length) return -1;
+      const d = i => { const c = centerOf(list[i].poly); return Math.hypot(c[0] - pt[0], c[1] - pt[1]); };
+      return hits.sort((a, b) => d(a) - d(b))[0];
+    };
+    $('.reveal__close', card).addEventListener('click', e => { e.stopPropagation(); hide(); });
+    $('.reveal__prev', card).addEventListener('click', e => { e.stopPropagation(); show(open - 1); });
+    $('.reveal__next', card).addEventListener('click', e => { e.stopPropagation(); show(open + 1); });
+    card.addEventListener('click', e => e.stopPropagation());
+    card.addEventListener('pointerdown', e => e.stopPropagation());
+    host.addEventListener('keydown', e => {
+      if (open < 0) return;
+      if (e.key === 'Escape') { hide(); e.stopPropagation(); }
+      if (e.key === 'ArrowRight' && card.contains(document.activeElement)) show(open + 1);
+      if (e.key === 'ArrowLeft' && card.contains(document.activeElement)) show(open - 1);
+    });
+    new ResizeObserver(place).observe(host);
+    buildChips();
+    return {
+      at, show, hide, get open() { return open; },
+      setFrames(next) { list = next; const was = open; hide(); buildChips(); if (was >= 0 && was < list.length) show(was); },
+    };
+  }
+
+  const plateFrames = m => m.frames.map((f, i) => ({ poly: f.footprint, src: f.src, file: f.file, exif: f.exif, ref: i === m.reference }));
+
   /* ---------- hero viewfinder: meter each source frame, release the shutter */
   if (plateEl) {
     const m = D.mosaics[0], ref = m.reference;
@@ -255,8 +367,22 @@
       flash.classList.remove('is-on');
       requestAnimationFrame(step);
     };
-    plateEl.addEventListener('click', fire);
-    plateEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); } });
+    const heroReveal = makeReveal(plateEl, plateFrames(m));
+    let lastPick = ref;
+    plateEl.addEventListener('click', e => {
+      const i = heroReveal.at(e);
+      if (i < 0) { heroReveal.hide(); return; }
+      lastPick = i;
+      fire();
+      setTimeout(() => heroReveal.show(i), reduced ? 0 : 420);
+    });
+    plateEl.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target === plateEl) {
+        e.preventDefault();
+        fire();
+        setTimeout(() => heroReveal.show(current >= 0 ? current : lastPick), reduced ? 0 : 420);
+      }
+    });
   }
 
   /* ---------- 01: overlap outlines on each print */
@@ -410,7 +536,25 @@
       if (on) requestAnimationFrame(() => { track.scrollLeft = (track.scrollWidth - track.clientWidth) / 2; });
     });
     $('[data-pano-full]', pano).addEventListener('click', () => openLightbox(img.dataset.full, img.alt));
-    img.addEventListener('click', () => { if (!pano.classList.contains('is-walking')) openLightbox(img.dataset.full, img.alt); });
+    const mi = +pano.closest('[data-mosaic]')?.dataset.mosaic;
+    if (D.mosaics[mi]) {
+      const host = document.createElement('div');
+      host.className = 'reveal-host';
+      img.before(host);
+      host.append(img);
+      const chips = document.createElement('div');
+      chips.className = 'reveal__chips';
+      $('.pano__bar', pano).append(chips);
+      const rv = makeReveal(host, plateFrames(D.mosaics[mi]), { chips });
+      let moved = 0, sx = 0;
+      host.addEventListener('pointerdown', e => { sx = e.clientX; moved = 0; });
+      host.addEventListener('pointermove', e => { moved = Math.max(moved, Math.abs(e.clientX - sx)); });
+      host.addEventListener('click', e => {
+        if (moved > 6) return;
+        const i = rv.at(e);
+        if (i < 0 || i === rv.open) rv.hide(); else rv.show(i);
+      });
+    }
     track.addEventListener('keydown', e => {
       if (!pano.classList.contains('is-walking')) return;
       if (e.key === 'ArrowRight') { track.scrollBy({ left: 160, behavior: 'smooth' }); e.preventDefault(); }
@@ -473,7 +617,7 @@
     const order = [1, 2, 3, 4, 5, 0];
     const img = $('[data-cyl-img]', cyl), range = $('[data-cyl-range]', cyl);
     const hud = k => $(`[data-hud="${k}"]`, cyl);
-    let shown = 3, preloaded = false;
+    let shown = 3, preloaded = false, onRun = null;
     const fmt = n => n.toLocaleString('en-US');
     const set = v => {
       const r = runs[order[v]];
@@ -483,6 +627,7 @@
         img.src = r.src;
         img.alt = r.kind === 'planar' ? 'Planar mosaic of all five sunset frames.' : `Cylindrical mosaic at radius ${Math.round(r.f)} px.`;
         img.onload = () => img.classList.remove('is-swap');
+        onRun?.(r);
       }, reduced ? 0 : 180);
       hud('label').textContent = r.kind === 'planar' ? `PLANAR · shown at ${r.scale.toFixed(2)} scale` : `CYLINDER · f = ${Math.round(r.f)} px (${r.scale}×)`;
       hud('size').textContent = `${fmt(r.w_full || r.w)} × ${fmt(r.h_full || r.h)}`;
@@ -494,7 +639,25 @@
     $('[data-cyl-toggle]', cyl).addEventListener('click', () => { range.value = shown === 5 ? 2 : 5; set(+range.value); });
     const openFull = () => openLightbox(runs[order[shown]].full, img.alt);
     $('[data-cyl-full]', cyl).addEventListener('click', openFull);
-    img.addEventListener('click', openFull);
+    const host = document.createElement('div');
+    host.className = 'reveal-host reveal-host--cyl';
+    img.before(host);
+    host.append(img);
+    const chips = document.createElement('div');
+    chips.className = 'reveal__chips';
+    $('.lensring__btns', cyl).after(chips);
+    const skyFrames = r => D.skyline.frames.map((f, i) => ({ ...f, poly: r.polys[i] }));
+    const frameBox = $('.cyl__frame', cyl);
+    const fitHost = () => {
+      const r = runs[order[shown]], ar = r.w / r.h, fw = frameBox.clientWidth, fh = frameBox.clientHeight;
+      const w = fw / fh > ar ? fh * ar : fw;
+      host.style.width = `${w}px`;
+      host.style.height = `${w / ar}px`;
+    };
+    new ResizeObserver(fitHost).observe(frameBox);
+    const rv = makeReveal(host, skyFrames(runs[order[2]]), { chips });
+    host.addEventListener('click', e => { const i = rv.at(e); if (i < 0 || i === rv.open) rv.hide(); else rv.show(i); });
+    onRun = r => { fitHost(); rv.setFrames(skyFrames(r)); };
     range.value = 2;
   }
 })();
