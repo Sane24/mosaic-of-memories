@@ -1002,3 +1002,19 @@ body::after { inset: 0; animation: none; mix-blend-mode: normal; opacity: .035; 
 .plate { overflow: hidden; }
 .plate.is-revealing { overflow: visible; }
 .plate > .reveal__veil { overflow: hidden; }
+
+/* links to the other CS180 projects */
+.projbar { display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; padding: 7px var(--gutter); background: #07090d; border-bottom: 1px solid rgba(196, 164, 122, .12); white-space: nowrap; }
+.projbar::-webkit-scrollbar { display: none; }
+.projbar__label { color: var(--muted); font-size: 10px; margin-right: 10px; }
+.projbar a { font: 500 10.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: none; padding: 6px 9px; border-radius: 2px; transition: color .25s, background .25s; }
+.projbar a b { color: #e7a23a; font-weight: 500; margin-right: 5px; }
+.projbar a:hover { color: var(--ivory); background: rgba(196, 164, 122, .1); }
+.projbar a[aria-current="page"] { color: #17110c; background: var(--gold); }
+.projbar a[aria-current="page"] b { color: #17110c; }
+@media print {
+  .projbar { display: flex !important; flex-wrap: wrap; background: #fff; border-bottom: .3mm solid #ccc; padding: 0 0 2mm; margin-bottom: 3mm; }
+  .projbar a { color: #333 !important; padding: 1mm 2mm; font-size: 7.5pt; }
+  .projbar a b { color: #7b3547; }
+  .projbar a[aria-current="page"] { background: #eee; }
+}
