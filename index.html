@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mosaic of Memories</title>
-<meta name="description" content="CS180/280A Project 4A: image warping and mosaicing. Manual homographies, inverse warping, perspective rectification and feathered photo mosaics.">
+<meta name="description" content="CS180 Project 4A: image warping and mosaicing. Manual homographies, inverse warping, perspective rectification and feathered photo mosaics.">
 <meta name="color-scheme" content="dark light">
 <link rel="canonical" href="https://sane24.github.io/mosaic-of-memories/">
-<link rel="icon" href="assets/apple.svg" type="image/svg+xml">
+<link rel="icon" href="assets/reel.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
@@ -18,11 +18,11 @@
 
 <svg width="0" height="0" class="defs" aria-hidden="true" focusable="false">
   <defs>
-    <symbol id="apple" viewBox="0 0 64 64">
-      <path d="M33 17c-2-6 1-12 7-14-1 6-3 10-7 14z" fill="#3d5a3a"/>
-      <path d="M32 19c-6-4-17-4-22 4-6 10-1 27 7 34 4 4 8 4 11 2 2-1 6-1 8 0 3 2 7 2 11-2 8-7 12-23 6-33-5-8-15-8-21-5z" fill="currentColor"/>
-      <path d="M17 27c2-4 6-6 10-5-4 2-7 5-8 10z" fill="#fff" opacity=".35"/>
-      <path d="M32 19c0-4 0-7 2-10" stroke="#3b2a1f" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <symbol id="reel" viewBox="0 0 48 48">
+      <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2"/>
+      <circle cx="24" cy="24" r="3.5" fill="currentColor"/>
+      <g fill="currentColor"><circle cx="24" cy="12" r="5"/><circle cx="34.4" cy="18" r="5"/><circle cx="34.4" cy="30" r="5"/>
+      <circle cx="24" cy="36" r="5"/><circle cx="13.6" cy="30" r="5"/><circle cx="13.6" cy="18" r="5"/></g>
     </symbol>
     <symbol id="aperture" viewBox="0 0 48 48">
       <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -42,7 +42,7 @@
 
 <header class="topbar">
   <a class="brand" href="#top" aria-label="Mosaic of Memories, back to top">
-    <svg class="brand__apple" aria-hidden="true"><use href="#apple"/></svg>
+    <svg class="brand__reel" aria-hidden="true"><use href="#reel"/></svg>
     <span>Mosaic <i>of</i> Memories</span>
   </a>
   <nav class="topnav" aria-label="Sections">
@@ -51,9 +51,11 @@
     <a href="#perspective"><b>03</b> Perspective</a>
     <a href="#stitching"><b>04</b> Stitching</a>
     <a href="#seams"><b>05</b> Seams</a>
-    <a href="#behind"><b>06</b> Behind</a>
-    <a href="#gallery"><b>07</b> Gallery</a>
+    <a href="#extras"><b>06</b> Extras</a>
+    <a href="#behind"><b>07</b> Behind</a>
+    <a href="#gallery"><b>08</b> Gallery</a>
   </nav>
+  <span class="counter mono" aria-hidden="true"><svg><use href="#reel"/></svg><b data-counter>FR 000</b></span>
   <a class="permalink" href="https://sane24.github.io/mosaic-of-memories/"><span class="permalink__dot" aria-hidden="true"></span>sane24.github.io/mosaic-of-memories</a>
 </header>
 
@@ -62,10 +64,17 @@
 <!-- ===================================================== 00 · OPENING -->
 <section class="hero" aria-labelledby="title">
   <div class="hero__sky" aria-hidden="true"></div>
+  <div class="leader" aria-hidden="true" data-leader>
+    <svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="78" class="leader__ring"/><circle cx="100" cy="100" r="62" class="leader__ring"/>
+      <path class="leader__sweep" d="M100 100 L100 22 A78 78 0 0 1 100 22 Z"/>
+      <line x1="0" y1="100" x2="200" y2="100"/><line x1="100" y1="0" x2="100" y2="200"/>
+      <text x="100" y="120" data-leader-num>3</text></svg>
+    <p class="mono">PROJECT 04A &middot; REEL 1 &middot; CLICK TO SKIP</p>
+  </div>
   <div class="hero__top">
     <div class="hero__left">
       <div class="hero__meta">
-        <span>CS180 / 280A</span><span>Project 04A</span><span>Image Warping &amp; Mosaicing</span>
+        <span>CS180</span><span>Project 04A</span><span>Image Warping &amp; Mosaicing</span>
       </div>
       <p class="print-url">Website: <a href="https://sane24.github.io/mosaic-of-memories/">https://sane24.github.io/mosaic-of-memories/</a></p>
       <h1 id="title" class="hero__title">
@@ -76,39 +85,49 @@
       <p class="hero__sub">Fragments of a world, stitched into something whole.</p>
     </div>
 
-    <aside class="readout" aria-label="Camera settings of the middle sunset frame">
-      <svg class="readout__dial" viewBox="0 0 120 120" aria-hidden="true">
+    <aside class="readout" aria-label="Camera settings of the frame under the viewfinder">
+      <svg class="readout__dial" viewBox="0 0 120 120" data-dial tabindex="0" role="slider" aria-label="Focus ring" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0">
         <circle cx="60" cy="60" r="56" class="ring"/>
-        <circle cx="60" cy="60" r="44" class="ring ring--in"/>
-        <g class="ticks" stroke="currentColor" stroke-width=".8" opacity=".6"><line x1="60.0" y1="10.0" x2="60.0" y2="17.0"/><line x1="66.5" y1="10.4" x2="66.0" y2="14.4"/><line x1="72.9" y1="11.7" x2="71.9" y2="15.6"/><line x1="79.1" y1="13.8" x2="76.5" y2="20.3"/><line x1="85.0" y1="16.7" x2="83.0" y2="20.2"/><line x1="90.4" y1="20.3" x2="88.0" y2="23.5"/><line x1="95.4" y1="24.6" x2="90.4" y2="29.6"/><line x1="99.7" y1="29.6" x2="96.5" y2="32.0"/><line x1="103.3" y1="35.0" x2="99.8" y2="37.0"/><line x1="106.2" y1="40.9" x2="99.7" y2="43.5"/><line x1="108.3" y1="47.1" x2="104.4" y2="48.1"/><line x1="109.6" y1="53.5" x2="105.6" y2="54.0"/><line x1="110.0" y1="60.0" x2="103.0" y2="60.0"/><line x1="109.6" y1="66.5" x2="105.6" y2="66.0"/><line x1="108.3" y1="72.9" x2="104.4" y2="71.9"/><line x1="106.2" y1="79.1" x2="99.7" y2="76.5"/><line x1="103.3" y1="85.0" x2="99.8" y2="83.0"/><line x1="99.7" y1="90.4" x2="96.5" y2="88.0"/><line x1="95.4" y1="95.4" x2="90.4" y2="90.4"/><line x1="90.4" y1="99.7" x2="88.0" y2="96.5"/><line x1="85.0" y1="103.3" x2="83.0" y2="99.8"/><line x1="79.1" y1="106.2" x2="76.5" y2="99.7"/><line x1="72.9" y1="108.3" x2="71.9" y2="104.4"/><line x1="66.5" y1="109.6" x2="66.0" y2="105.6"/><line x1="60.0" y1="110.0" x2="60.0" y2="103.0"/><line x1="53.5" y1="109.6" x2="54.0" y2="105.6"/><line x1="47.1" y1="108.3" x2="48.1" y2="104.4"/><line x1="40.9" y1="106.2" x2="43.5" y2="99.7"/><line x1="35.0" y1="103.3" x2="37.0" y2="99.8"/><line x1="29.6" y1="99.7" x2="32.0" y2="96.5"/><line x1="24.6" y1="95.4" x2="29.6" y2="90.4"/><line x1="20.3" y1="90.4" x2="23.5" y2="88.0"/><line x1="16.7" y1="85.0" x2="20.2" y2="83.0"/><line x1="13.8" y1="79.1" x2="20.3" y2="76.5"/><line x1="11.7" y1="72.9" x2="15.6" y2="71.9"/><line x1="10.4" y1="66.5" x2="14.4" y2="66.0"/><line x1="10.0" y1="60.0" x2="17.0" y2="60.0"/><line x1="10.4" y1="53.5" x2="14.4" y2="54.0"/><line x1="11.7" y1="47.1" x2="15.6" y2="48.1"/><line x1="13.8" y1="40.9" x2="20.3" y2="43.5"/><line x1="16.7" y1="35.0" x2="20.2" y2="37.0"/><line x1="20.3" y1="29.6" x2="23.5" y2="32.0"/><line x1="24.6" y1="24.6" x2="29.6" y2="29.6"/><line x1="29.6" y1="20.3" x2="32.0" y2="23.5"/><line x1="35.0" y1="16.7" x2="37.0" y2="20.2"/><line x1="40.9" y1="13.8" x2="43.5" y2="20.3"/><line x1="47.1" y1="11.7" x2="48.1" y2="15.6"/><line x1="53.5" y1="10.4" x2="54.0" y2="14.4"/></g>
-        <g class="stops" font-size="8.5">
-          <text x="60" y="13">1.8</text><text x="96" y="30">2.8</text><text x="109" y="64">4</text>
-          <text x="96" y="99">5.6</text><text x="60" y="114">8</text><text x="22" y="99">11</text>
-          <text x="10" y="64">16</text><text x="22" y="30">22</text>
+        <g data-dial-ring>
+          <circle cx="60" cy="60" r="44" class="ring ring--in"/>
+          <g class="ticks" data-ticks stroke="currentColor" stroke-width=".8" opacity=".6"></g>
+          <g class="stops" font-size="7.5">
+            <text x="60" y="27">&infin;</text><text x="86" y="40">10</text><text x="94" y="64">5</text>
+            <text x="86" y="88">3</text><text x="60" y="99">2</text><text x="34" y="88">1.5</text>
+            <text x="26" y="64">1</text><text x="34" y="40">.7</text>
+          </g>
         </g>
-        <path d="M60 18 l-4 -6 h8z" class="index"/>
-        <g class="blades"><use href="#aperture" x="38" y="38" width="44" height="44"/></g>
+        <path d="M60 4 l-4 -4 h8z" class="index"/>
+        <g class="blades"><use href="#aperture" x="44" y="44" width="32" height="32"/></g>
       </svg>
-      <div class="readout__lcd">
-        <p class="readout__row readout__row--top"><span>FR 02/03</span><span class="rec">&#9679; REF</span></p>
-        <p class="readout__main"><span><small>f/</small>1.78</span><span>1/10870</span><span><small>ISO</small>64</span></p>
+      <div class="readout__lcd" aria-live="polite">
+        <p class="readout__row readout__row--top"><span data-ro="frame">FR 02/03</span><span class="rec"><i></i><span data-ro="tc">00:00:00:00</span></span></p>
+        <p class="readout__main"><span><small>f/</small><span data-ro="f">1.78</span></span><span data-ro="s">1/10870</span><span><small>ISO</small><span data-ro="iso">64</span></span></p>
         <div class="readout__meter" aria-hidden="true">
           <span>&minus;2</span><i></i><i></i><span>&minus;1</span><i></i><i></i><b>0</b><i></i><i></i><span>+1</span><i></i><i></i><span>+2</span>
+          <em class="needle" data-ro="needle"></em>
         </div>
-        <p class="readout__row"><span>48 mm eq</span><span>iPhone 14 Pro</span></p>
+        <p class="readout__row"><span><span data-ro="mm">48</span> mm eq</span><span data-ro="ev">&plusmn;0.0 EV vs ref</span><span data-ro="exp">EXP 01/36</span></p>
       </div>
-      <p class="readout__cap mono">exif, frame 02, plate I</p>
+      <p class="readout__cap mono"><span class="hint-fine">drag the ring to focus &middot; hover the plate to meter each frame &middot; click to fire</span><span class="hint-touch">touch the plate to meter a frame and fire the shutter</span></p>
     </aside>
   </div>
 
   <figure class="hero__plate" style="--ar: 2.3761">
-    <div class="plate" data-parallax="0.6">
+    <div class="plate-wrap">
+    <div class="gate" aria-hidden="true"><span class="gate__strip gate__strip--top"></span><span class="gate__strip gate__strip--bottom"></span></div>
+    <div class="plate" data-plate tabindex="0" role="button" aria-label="Viewfinder over plate I. Click or press Enter to release the shutter.">
       <img class="plate__layer l1" src="assets/img/mosaic1_warped1.webp" alt="" aria-hidden="true">
       <img class="plate__layer l3" src="assets/img/mosaic1_warped3.webp" alt="" aria-hidden="true">
       <img class="plate__layer l2" src="assets/img/mosaic1_warped2.webp" alt="" aria-hidden="true">
       <img class="plate__final" src="assets/img/mosaic1_feathered_2400.webp" alt="Three sunset photographs over the bay stitched into one wide panorama; the outer frames fan out into a bow-tie shape.">
-      <span class="af af--1" aria-hidden="true"></span><span class="af af--2" aria-hidden="true"></span><span class="af af--3" aria-hidden="true"></span>
-      <span class="datestamp" aria-hidden="true">17:57</span><span class="vf vf--tl"></span><span class="vf vf--tr"></span><span class="vf vf--bl"></span><span class="vf vf--br"></span>
+      <svg class="plate__frames" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true" data-frames></svg>
+      <span class="plate__af" aria-hidden="true" data-af><i></i><i></i><i></i><i></i></span>
+      <svg class="plate__iris" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true" data-iris></svg>
+      <span class="plate__flash" aria-hidden="true" data-flash></span>
+      <span class="vf vf--tl"></span><span class="vf vf--tr"></span><span class="vf vf--bl"></span><span class="vf vf--br"></span>
+      <span class="plate__tag mono" aria-hidden="true" data-frame-tag></span>
+    </div>
     </div>
     <figcaption class="hero__cap">
       <span>Plate I</span><span>Last Light Over the Bay</span><span>3 frames</span><span>7,031 &times; 2,959 px</span><span>frames 01 to 03, warped and feathered</span>
@@ -116,13 +135,9 @@
   </figure>
 
   <div class="hero__intro">
-    <p>Nine photographs from one afternoon around Berkeley, a few dozen points I matched by hand, and a 3&times;3 matrix for every pair. This is my write-up for Part A of the image mosaicing project: recovering homographies, warping with my own nearest-neighbor and bilinear samplers, rectifying three views of flat objects, and blending three panoramas.</p>
-    <svg class="sticker sticker--apple" aria-hidden="true"><use href="#apple"/></svg>
+    <p>Thirteen photographs from one afternoon around Berkeley, a few dozen points I matched by hand, and a 3&times;3 matrix for every pair. This is my write-up for Part A of the image mosaicing project: recovering homographies, warping with my own nearest-neighbor and bilinear samplers, rectifying three views of flat objects, blending three panoramas, and, as an extra, wrapping a five-frame panorama onto a cylinder.</p>
   </div>
 
-  <svg class="skyline" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M0 120V92h40v-14h18v14h30V70h12V54l6-10 6 10v16h12v22h44V80h26V62h8V40l5-8 5 8v22h8v18h30v12h52V74h14V58h20V30l4-14 4 14v28h20v16h14v18h60V66h10V50h22v16h10v26h48V84h30V60l12-22 12 22v24h30v8h70V70h16V48h6V36h4V24l3-8 3 8v12h4v12h6v22h16v22h56V78h22V64h36v28h40V58h8V44l10-14 10 14v14h8v34h52V80h20V50h6l8-16 8 16h6v42h44V70h28v22h40V60h14V46h16v14h14v32h60v28z" fill="currentColor"/>
-  </svg>
   <a class="hero__scroll" href="#fragments">Begin with the frames</a>
 </section>
 
@@ -148,9 +163,9 @@
         <p>Looking west at sunset. The Golden Gate Bridge and the San Francisco skyline are on the horizon, and the middle frame is the reference.</p>
       </div>
       <div class="strip__prints">
-        <figure class="print print--tilt-l" data-frame="0:0"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic1_frame1.jpg" alt="Frame 01: sunset sky over rooftops, with tall grass in the foreground on the left." loading="lazy"></div><figcaption><b>FRAME 01</b> mosaic_1a.jpg<br><span>17:56 &middot; 46mm eq &middot; f/1.78 &middot; 1/4184s &middot; ISO 80</span></figcaption></figure>
-        <figure class="print print--ref" data-frame="0:1"><span class="tape tape--r"></span><div class="print__img"><img src="assets/img/mosaic1_frame2.jpg" alt="Frame 02: the sun low over the bay, with the San Francisco skyline on the horizon." loading="lazy"></div><figcaption><b>FRAME 02</b> mosaic_1b.jpg <em>reference</em><br><span>17:57 &middot; 48mm eq &middot; f/1.78 &middot; 1/10870s &middot; ISO 64</span></figcaption></figure>
-        <figure class="print print--tilt-r" data-frame="0:2"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic1_frame3.jpg" alt="Frame 03: the sun and the Golden Gate Bridge, with an apartment building on the right." loading="lazy"></div><figcaption><b>FRAME 03</b> mosaic_1c.jpg<br><span>17:57 &middot; 48mm eq &middot; f/1.78 &middot; 1/8929s &middot; ISO 64</span></figcaption></figure>
+        <figure class="print print--tilt-l" data-frame="0:0"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic1_frame1.jpg" alt="Frame 01: sunset sky over rooftops, with tall grass in the foreground on the left." loading="lazy"></div><figcaption><b>FRAME 01</b> mosaic_1a.jpg<br><span>46mm eq &middot; f/1.78 &middot; 1/4184s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--ref" data-frame="0:1"><span class="tape tape--r"></span><div class="print__img"><img src="assets/img/mosaic1_frame2.jpg" alt="Frame 02: the sun low over the bay, with the San Francisco skyline on the horizon." loading="lazy"></div><figcaption><b>FRAME 02</b> mosaic_1b.jpg <em>reference</em><br><span>48mm eq &middot; f/1.78 &middot; 1/10870s &middot; ISO 64</span></figcaption></figure>
+        <figure class="print print--tilt-r" data-frame="0:2"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic1_frame3.jpg" alt="Frame 03: the sun and the Golden Gate Bridge, with an apartment building on the right." loading="lazy"></div><figcaption><b>FRAME 03</b> mosaic_1c.jpg<br><span>48mm eq &middot; f/1.78 &middot; 1/8929s &middot; ISO 64</span></figcaption></figure>
       </div>
     </article>
 
@@ -161,9 +176,9 @@
         <p>The old Life Sciences Building on campus, with ZOOLOGY and BOTANY carved over its two wings and the Chan Shun Auditorium entrance in the middle.</p>
       </div>
       <div class="strip__prints">
-        <figure class="print print--tilt-r" data-frame="1:0"><span class="tape tape--r"></span><div class="print__img"><img src="assets/img/mosaic2_frame1.jpg" alt="Frame 04: lawn and modern buildings, with the left wing of the Zoology building at the edge." loading="lazy"></div><figcaption><b>FRAME 04</b> mosaic_2a.jpg<br><span>16:14 &middot; 24mm eq &middot; f/1.78 &middot; 1/4545s &middot; ISO 80</span></figcaption></figure>
-        <figure class="print print--ref" data-frame="1:1"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic2_frame2.jpg" alt="Frame 05: the white facade with Chan Shun Auditorium doors, steps and a tall evergreen in front." loading="lazy"></div><figcaption><b>FRAME 05</b> mosaic_2b.jpg <em>reference</em><br><span>16:14 &middot; 24mm eq &middot; f/1.78 &middot; 1/3155s &middot; ISO 80</span></figcaption></figure>
-        <figure class="print print--tilt-l" data-frame="1:2"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic2_frame3.jpg" alt="Frame 06: the Botany wing with tall windows, trees and lawn on the right." loading="lazy"></div><figcaption><b>FRAME 06</b> mosaic_2c.jpg<br><span>16:14 &middot; 24mm eq &middot; f/1.78 &middot; 1/2882s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--tilt-r" data-frame="1:0"><span class="tape tape--r"></span><div class="print__img"><img src="assets/img/mosaic2_frame1.jpg" alt="Frame 04: lawn and modern buildings, with the left wing of the Zoology building at the edge." loading="lazy"></div><figcaption><b>FRAME 04</b> mosaic_2a.jpg<br><span>24mm eq &middot; f/1.78 &middot; 1/4545s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--ref" data-frame="1:1"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic2_frame2.jpg" alt="Frame 05: the white facade with Chan Shun Auditorium doors, steps and a tall evergreen in front." loading="lazy"></div><figcaption><b>FRAME 05</b> mosaic_2b.jpg <em>reference</em><br><span>24mm eq &middot; f/1.78 &middot; 1/3155s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--tilt-l" data-frame="1:2"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic2_frame3.jpg" alt="Frame 06: the Botany wing with tall windows, trees and lawn on the right." loading="lazy"></div><figcaption><b>FRAME 06</b> mosaic_2c.jpg<br><span>24mm eq &middot; f/1.78 &middot; 1/2882s &middot; ISO 80</span></figcaption></figure>
       </div>
     </article>
 
@@ -174,9 +189,9 @@
         <p>Inside Chicha San Chen. Menu screens, a HAPPY HALLOWEEN banner, a concrete pillar, and people a few meters away who kept moving between shots.</p>
       </div>
       <div class="strip__prints">
-        <figure class="print print--tilt-l" data-frame="2:0"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic3_frame1.jpg" alt="Frame 07: window wall, a wooden planter with an olive tree, and the order counter." loading="lazy"></div><figcaption><b>FRAME 07</b> mosaic_3a.jpg<br><span>16:25 &middot; 24mm eq &middot; f/1.78 &middot; 1/130s &middot; ISO 64</span></figcaption></figure>
-        <figure class="print print--ref" data-frame="2:1"><span class="tape tape--r"></span><div class="print__img"><img src="assets/img/mosaic3_frame2.jpg" alt="Frame 08: the counter with menu screens, the HAPPY banner and a seated customer." loading="lazy"></div><figcaption><b>FRAME 08</b> mosaic_3b.jpg <em>reference</em><br><span>16:25 &middot; 24mm eq &middot; f/1.78 &middot; 1/120s &middot; ISO 80</span></figcaption></figure>
-        <figure class="print print--tilt-r" data-frame="2:2"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic3_frame3.jpg" alt="Frame 09: the concrete pillar with a MAX OCCUPANCY sign, tables and the pick-up area." loading="lazy"></div><figcaption><b>FRAME 09</b> mosaic_3c.jpg<br><span>16:25 &middot; 24mm eq &middot; f/1.78 &middot; 1/120s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--tilt-l" data-frame="2:0"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic3_frame1.jpg" alt="Frame 07: window wall, a wooden planter with an olive tree, and the order counter." loading="lazy"></div><figcaption><b>FRAME 07</b> mosaic_3a.jpg<br><span>24mm eq &middot; f/1.78 &middot; 1/130s &middot; ISO 64</span></figcaption></figure>
+        <figure class="print print--ref" data-frame="2:1"><span class="tape tape--r"></span><div class="print__img"><img src="assets/img/mosaic3_frame2.jpg" alt="Frame 08: the counter with menu screens, the HAPPY banner and a seated customer." loading="lazy"></div><figcaption><b>FRAME 08</b> mosaic_3b.jpg <em>reference</em><br><span>24mm eq &middot; f/1.78 &middot; 1/120s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--tilt-r" data-frame="2:2"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic3_frame3.jpg" alt="Frame 09: the concrete pillar with a MAX OCCUPANCY sign, tables and the pick-up area." loading="lazy"></div><figcaption><b>FRAME 09</b> mosaic_3c.jpg<br><span>24mm eq &middot; f/1.78 &middot; 1/120s &middot; ISO 80</span></figcaption></figure>
       </div>
     </article>
   </div>
@@ -332,8 +347,8 @@
       </div>
     </div>
     <div class="loupe">
-      <figure><img src="assets/img/rectification1_zoom_nearest.webp" alt="Close-up of the nearest-neighbor result: stair-stepped edges on the lettering." loading="lazy"><figcaption class="mono">nearest &middot; 34 ms</figcaption></figure>
-      <figure><img src="assets/img/rectification1_zoom_bilinear.webp" alt="Same close-up with bilinear sampling: smooth, slightly softer edges." loading="lazy"><figcaption class="mono">bilinear &middot; 79 ms</figcaption></figure>
+      <figure><img src="assets/img/rectification1_zoom_nearest.webp" alt="Close-up of the nearest-neighbor result: stair-stepped edges on the lettering." loading="lazy"><figcaption class="mono">nearest &middot; 31 ms</figcaption></figure>
+      <figure><img src="assets/img/rectification1_zoom_bilinear.webp" alt="Same close-up with bilinear sampling: smooth, slightly softer edges." loading="lazy"><figcaption class="mono">bilinear &middot; 69 ms</figcaption></figure>
       <div class="loupe__note">
         <p class="mono">close-up, 5&times; pixel replication</p>
         <p>Same crop of both outputs, with each output pixel drawn as a 5&times;5 block. Nearest neighbor copies whichever source pixel is closest, so the letter edges turn into little stairs. Bilinear blends the four surrounding pixels, so edges stay smooth but get a bit softer.</p>
@@ -369,8 +384,8 @@
       </div>
     </div>
     <div class="loupe">
-      <figure><img src="assets/img/rectification2_zoom_nearest.webp" alt="Close-up of the nearest-neighbor menu: jagged edges on the QR code and text." loading="lazy"><figcaption class="mono">nearest &middot; 43 ms</figcaption></figure>
-      <figure><img src="assets/img/rectification2_zoom_bilinear.webp" alt="Same close-up with bilinear sampling." loading="lazy"><figcaption class="mono">bilinear &middot; 101 ms</figcaption></figure>
+      <figure><img src="assets/img/rectification2_zoom_nearest.webp" alt="Close-up of the nearest-neighbor menu: jagged edges on the QR code and text." loading="lazy"><figcaption class="mono">nearest &middot; 51 ms</figcaption></figure>
+      <figure><img src="assets/img/rectification2_zoom_bilinear.webp" alt="Same close-up with bilinear sampling." loading="lazy"><figcaption class="mono">bilinear &middot; 108 ms</figcaption></figure>
       <div class="loupe__note">
         <p class="mono">close-up, 5&times; pixel replication</p>
         <p>The crop is picked automatically where the warp stretches the photo the most and there is detail to look at; here each source pixel covers 1.07 to 1.11 output pixels across. Fine high-contrast patterns like the QR code show the difference best.</p>
@@ -407,8 +422,8 @@
       </div>
     </div>
     <div class="loupe">
-      <figure><img src="assets/img/rectification3_zoom_nearest.webp" alt="Close-up of the nearest-neighbor result on the second menu." loading="lazy"><figcaption class="mono">nearest &middot; 29 ms</figcaption></figure>
-      <figure><img src="assets/img/rectification3_zoom_bilinear.webp" alt="Same close-up with bilinear sampling." loading="lazy"><figcaption class="mono">bilinear &middot; 71 ms</figcaption></figure>
+      <figure><img src="assets/img/rectification3_zoom_nearest.webp" alt="Close-up of the nearest-neighbor result on the second menu." loading="lazy"><figcaption class="mono">nearest &middot; 38 ms</figcaption></figure>
+      <figure><img src="assets/img/rectification3_zoom_bilinear.webp" alt="Same close-up with bilinear sampling." loading="lazy"><figcaption class="mono">bilinear &middot; 86 ms</figcaption></figure>
       <div class="loupe__note">
         <p class="mono">close-up, 5&times; pixel replication</p>
         <p>This sheet is turned much further from the camera than the front menu, so its far side is squeezed into very few pixels. Each source pixel there covers 1.44 to 1.61 output pixels, which is where the two samplers differ most.</p>
@@ -431,7 +446,7 @@
     <div>
       <h3 class="small-head">Quality and speed</h3>
       <p>At normal viewing size the two results look almost identical, because these rectifications only enlarge the photo slightly. The difference shows up on edges once you zoom in: nearest neighbor gives jagged, blocky diagonals and bilinear gives smooth ones.</p>
-      <p>Bilinear is slower because it reads four pixels and does several multiplies per output pixel instead of one lookup. Median of three runs on my machine: <b>34 ms vs 79 ms</b> for the book and <b>43 ms vs 101 ms</b> for the menu, so bilinear costs about 2.4&times; to 2.3&times; more. Both are fast enough not to matter here, so I used bilinear for everything else, including the mosaics.</p>
+      <p>Bilinear is slower because it reads four pixels and does several multiplies per output pixel instead of one lookup. Median of three runs on my machine: <b>31 ms vs 69 ms</b> for the book and <b>51 ms vs 108 ms</b> for the menu, so bilinear costs about 2.2&times; to 2.1&times; more. Both are fast enough not to matter here, so I used bilinear for everything else, including the mosaics.</p>
     </div>
   </div>
 </section>
@@ -455,7 +470,7 @@
       <div>
         <h3>Last Light Over the Bay</h3>
         <p class="mono">3 frames &middot; canvas 7,031 &times; 2,959 px &middot; reference mosaic_1b.jpg</p>
-        <p class="mono plate-ex__exif">17:57 &middot; 48mm eq &middot; f/1.78 &middot; 1/10870s &middot; ISO 64</p>
+        <p class="mono plate-ex__exif">48mm eq &middot; f/1.78 &middot; 1/10870s &middot; ISO 64</p>
       </div>
     </header>
     <div class="pano" data-pano>
@@ -497,7 +512,7 @@
       <div>
         <h3>Zoology & Botany</h3>
         <p class="mono">3 frames &middot; canvas 5,959 &times; 2,887 px &middot; reference mosaic_2b.jpg</p>
-        <p class="mono plate-ex__exif">16:14 &middot; 24mm eq &middot; f/1.78 &middot; 1/3155s &middot; ISO 80</p>
+        <p class="mono plate-ex__exif">24mm eq &middot; f/1.78 &middot; 1/3155s &middot; ISO 80</p>
       </div>
     </header>
     <div class="pano" data-pano>
@@ -539,7 +554,7 @@
       <div>
         <h3>Halloween at the Tea Counter</h3>
         <p class="mono">3 frames &middot; canvas 7,169 &times; 3,272 px &middot; reference mosaic_3b.jpg</p>
-        <p class="mono plate-ex__exif">16:25 &middot; 24mm eq &middot; f/1.78 &middot; 1/120s &middot; ISO 80</p>
+        <p class="mono plate-ex__exif">24mm eq &middot; f/1.78 &middot; 1/120s &middot; ISO 80</p>
       </div>
     </header>
     <div class="pano" data-pano>
@@ -614,10 +629,106 @@
     <figure><img src="assets/img/mosaic2_weights_print.jpg" alt="Static weight map for plate II." loading="lazy"><figcaption>Normalized weights (red: frame 04, gold: frame 05, blue: frame 06)</figcaption></figure>
   </div>
 
+</section>
+
+<!-- ===================================================== 06 · EXTRAS -->
+<section id="extras" class="sheet sheet--night sheet--extras" aria-labelledby="h-extras">
+  <header class="sec-head sec-head--split">
+    <p class="sec-num">06 <span>/ A.5 Bells &amp; whistles</span></p>
+    <h2 id="h-extras">Beyond the <i>plane</i></h2>
+    <p class="sec-lede">Five frames of the same sunset cover about 133&deg; of horizon. A flat image plane cannot hold that gracefully, so I wrapped the mosaic onto a cylinder instead.</p>
+  </header>
+
+  <div class="contact-strip" aria-label="The five skyline frames, left to right">
+    <figure><img src="assets/img/skyline_frame1.jpg" alt="Skyline frame 1: trees, rooftops and contrails, the far left of the view." loading="lazy"><figcaption class="mono"><b>A1</b> mosaic_1z.jpg<br>46mm eq &middot; f/1.78 &middot; 1/2525s &middot; ISO 80</figcaption></figure>
+    <figure><img src="assets/img/skyline_frame2.jpg" alt="Skyline frame 2: pine trees and apartment blocks." loading="lazy"><figcaption class="mono"><b>A2</b> mosaic_1a.jpg<br>46mm eq &middot; f/1.78 &middot; 1/4184s &middot; ISO 80</figcaption></figure>
+    <figure class="is-ref"><img src="assets/img/skyline_frame3.jpg" alt="Skyline frame 3: the San Francisco skyline on the horizon, the reference frame." loading="lazy"><figcaption class="mono"><b>A3</b> mosaic_1a-1b.jpg <em>reference</em><br>46mm eq &middot; f/1.78 &middot; 1/8929s &middot; ISO 80</figcaption></figure>
+    <figure><img src="assets/img/skyline_frame4.jpg" alt="Skyline frame 4: the low sun over the bay." loading="lazy"><figcaption class="mono"><b>A4</b> mosaic_1b.jpg<br>48mm eq &middot; f/1.78 &middot; 1/10870s &middot; ISO 64</figcaption></figure>
+    <figure><img src="assets/img/skyline_frame5.jpg" alt="Skyline frame 5: the sun and an apartment building on the right." loading="lazy"><figcaption class="mono"><b>A5</b> mosaic_1c.jpg<br>48mm eq &middot; f/1.78 &middot; 1/8929s &middot; ISO 64</figcaption></figure>
+  </div>
+
+  <div class="prose prose--two">
+    <p>Plate I only used three of the five sunset frames I took. For this I added the other two, matched each new pair by hand like before, and chained everything into the middle frame, <code>mosaic_1a-1b.jpg</code>: 9 points for mosaic_1z.jpg&nbsp;&rarr;&nbsp;mosaic_1a.jpg (mean error 1.28&nbsp;px), 10 for mosaic_1a.jpg&nbsp;&rarr;&nbsp;mosaic_1a-1b.jpg (0.47&nbsp;px), 10 for mosaic_1b.jpg&nbsp;&rarr;&nbsp;mosaic_1a-1b.jpg (1.22&nbsp;px), and plate I's 8 points for mosaic_1c.jpg&nbsp;&rarr;&nbsp;mosaic_1b.jpg. The two outer frames on the right were taken about a minute and a half after the others, so the sun moved a little and the phone was tilted slightly differently. That shows up as the step in the top edge.</p>
+    <p>The cylinder mapping only needs the homographies I already had. An output pixel (<var>u</var>,&nbsp;<var>v</var>) on a cylinder of radius <var>f</var> around the middle camera is the viewing ray (sin&nbsp;&theta;, <var>v</var>/<var>f</var>, cos&nbsp;&theta;) with &theta;&nbsp;=&nbsp;<var>u</var>/<var>f</var>. That ray hits the middle frame's image plane at <var>x</var>&nbsp;=&nbsp;<var>c<sub>x</sub></var>&nbsp;+&nbsp;<var>f</var>&nbsp;tan&nbsp;&theta;, <var>y</var>&nbsp;=&nbsp;<var>c<sub>y</sub></var>&nbsp;+&nbsp;<var>v</var>/cos&nbsp;&theta;, and H<sub><var>i</var></sub><sup>&minus;1</sup> takes that point back into photo <var>i</var>. So every output pixel is sampled once, straight from the original photo, with the same bilinear sampler as everything else. I never build the flat mosaic and re-warp it, which would blur twice and throw away the detail at the stretched edges.</p>
+  </div>
+
+  <div class="cyl" data-cyl>
+    <div class="cyl__stage">
+      <div class="cyl__frame">
+        <img class="cyl__img" src="assets/img/skyline_cylinder_f1_2400.webp" data-cyl-img alt="Cylindrical mosaic of all five sunset frames at the chosen radius." loading="lazy">
+      </div>
+      <div class="cyl__hud mono" aria-live="polite">
+        <span data-hud="label">CYLINDER &middot; f = 2392 px</span><span data-hud="size">5,565 &times; 1,644</span>
+        <span data-hud="cov">coverage 86%</span><span data-hud="mag">stretch 1.06&times; median, 1.21&times; max</span>
+      </div>
+    </div>
+    <div class="lensring" role="group" aria-label="Projection and cylinder radius">
+      <p class="mono lensring__label">projection &middot; radius</p>
+      <input class="lensring__input" type="range" min="0" max="5" step="1" value="2" data-cyl-range aria-label="Choose the projection: cylinder radii from 0.5 to 2.5 times the focal length, or planar">
+      <div class="lensring__scale mono" aria-hidden="true">
+        <span>0.5&times;</span><span>0.75&times;</span><span>1&times; f</span><span>1.5&times;</span><span>2.5&times;</span><span>planar</span>
+      </div>
+      <div class="lensring__btns">
+        <button type="button" class="btn btn--ghost" data-cyl-toggle>Flip planar &#8644; cylinder</button>
+        <button type="button" class="btn btn--ghost" data-cyl-full>Full resolution</button>
+      </div>
+    </div>
+    <p class="live-only">Interactive on the live site: a radius ring switches between all six projections. Below are the static results.</p>
+  </div>
+
+  <div class="runs">
+    <table class="gains runs__table">
+      <thead><tr><th>projection</th><th>radius</th><th>canvas (px)</th><th>image coverage</th><th>stretch, median</th><th>stretch, max</th></tr></thead>
+      <tbody>
+        <tr><td>cylinder 0.5&times;</td><td>1196 px</td><td>3,250 &times; 1,492</td><td>78%</td><td>0.83&times;</td><td>1.00&times;</td></tr>
+        <tr><td>cylinder 0.75&times;</td><td>1794 px</td><td>4,513 &times; 1,508</td><td>86%</td><td>0.93&times;</td><td>1.01&times;</td></tr>
+        <tr class="is-chosen"><td>cylinder 1&times; (chosen)</td><td>2392 px</td><td>5,565 &times; 1,644</td><td>86%</td><td>1.06&times;</td><td>1.21&times;</td></tr>
+        <tr><td>cylinder 1.5&times;</td><td>3588 px</td><td>7,150 &times; 2,084</td><td>77%</td><td>1.39&times;</td><td>1.85&times;</td></tr>
+        <tr><td>cylinder 2.5&times;</td><td>5980 px</td><td>8,948 &times; 2,796</td><td>66%</td><td>1.84&times;</td><td>2.80&times;</td></tr>
+        <tr><td>planar</td><td>&infin;</td><td>11,138 &times; 3,829</td><td>56%</td><td>2.53&times;</td><td>4.67&times;</td></tr>
+      </tbody>
+    </table>
+    <p class="small">Radius in pixels at the 1800&nbsp;px working size; 1&times; is the focal length from the EXIF data (46&nbsp;mm equivalent, 2392&nbsp;px). Coverage is the share of the bounding canvas that has image in it. Stretch is how many output pixels each source pixel turns into, measured from the inverse mapping, over the pixels each frame contributes most to. The planar mosaic is huge, so it is rendered at 0.84 scale; the numbers here are for full scale.</p>
+  </div>
+
+  <div class="radii" aria-label="All five radii">
+    <figure><img src="assets/img/skyline_thumb_0p5.jpg" alt="Cylinder at half the focal length: the horizon bows into an arc." loading="lazy"><figcaption class="mono">0.5&times; &middot; 1196 px</figcaption></figure>
+    <figure><img src="assets/img/skyline_thumb_0p75.jpg" alt="Cylinder at 0.75 times the focal length." loading="lazy"><figcaption class="mono">0.75&times; &middot; 1794 px</figcaption></figure>
+    <figure class="is-chosen"><img src="assets/img/skyline_thumb_1.jpg" alt="Cylinder at the focal length: flat horizon." loading="lazy"><figcaption class="mono">1&times; &middot; 2392 px &middot; chosen</figcaption></figure>
+    <figure><img src="assets/img/skyline_thumb_1p5.jpg" alt="Cylinder at 1.5 times the focal length." loading="lazy"><figcaption class="mono">1.5&times; &middot; 3588 px</figcaption></figure>
+    <figure><img src="assets/img/skyline_thumb_2p5.jpg" alt="Cylinder at 2.5 times the focal length, starting to look like the planar bow-tie." loading="lazy"><figcaption class="mono">2.5&times; &middot; 5980 px</figcaption></figure>
+    <figure><img src="assets/img/skyline_thumb_planar.jpg" alt="Planar mosaic of all five frames: the left end is stretched far out." loading="lazy"><figcaption class="mono">planar</figcaption></figure>
+  </div>
+
+  <div class="prose prose--two">
+    <div>
+      <h3 class="small-head">Distortion</h3>
+      <p>On the flat plane, horizontal distance grows like tan&nbsp;&theta;, so the frames furthest from the middle are pulled outward. Near the left end, each pixel of the original photo is blown up to as much as 4.67&times; its size, and the canvas fans into a bow-tie. On the cylinder, distance grows with the angle itself, so every frame keeps roughly its own size and the horizon stays straight. The price is that straight lines that are not vertical or on the horizon now curve gently, like the rooftop edges near the bottom.</p>
+      <p>The radius is a real choice. Below the true focal length the horizon bows into an arc, because the mapping no longer matches how the camera saw the scene, and everything gets squeezed (stretch under 1 means photo pixels are being thrown away). Above it the result drifts back toward the planar look. At exactly the EXIF focal length, 2392&nbsp;px, the horizon is flat, verticals stay vertical, and the stretch is 1.06&times; in the median and 1.21&times; at worst, so almost every output pixel is one photo pixel. That is the one I picked.</p>
+    </div>
+    <div>
+      <h3 class="small-head">Coverage and quality</h3>
+      <p>Only 56% of the planar canvas has any image in it; the rest is the empty wedges around the bow-tie. The chosen cylinder fills 86% of a much smaller canvas (5,565 &times; 1,644 against 11,138 &times; 3,829 for planar at full scale), so far less of the file is padding and a crop to a clean rectangle loses much less.</p>
+      <p>For quality, the close-ups below take the same 560&nbsp;&times;&nbsp;380 window of output pixels around the same two landmarks. On the plane, those pixels cover a much smaller piece of the scene and are stretched up to several times, so the detail is soft and smeared sideways. On the cylinder the same window shows a wider, sharper view, because each output pixel is close to one photo pixel and was sampled from the original image only once. The Golden Gate pair looks much more alike, which is expected: the tower is about 23&deg; from the middle frame's axis, against 38&deg; for the pine, and tan&nbsp;&theta; only pulls away from &theta; quickly at larger angles.</p>
+    </div>
+  </div>
+
+  <div class="closeups">
+    <figure><img src="assets/img/skyline_planar_crop1.jpg" alt="Planar close-up around the left pine from frame A1: stretched sideways and soft." loading="lazy"><figcaption class="mono">planar &middot; left pine (frame A1)</figcaption></figure>
+    <figure><img src="assets/img/skyline_cylinder_f1_crop1.jpg" alt="Cylindrical close-up around the same pine: sharper and in proportion." loading="lazy"><figcaption class="mono">cylinder 1&times; &middot; same landmark</figcaption></figure>
+    <figure><img src="assets/img/skyline_planar_crop2.jpg" alt="Planar close-up around the Golden Gate Bridge tower, from frame A5." loading="lazy"><figcaption class="mono">planar &middot; Golden Gate tower (frame A5)</figcaption></figure>
+    <figure><img src="assets/img/skyline_cylinder_f1_crop2.jpg" alt="Cylindrical close-up around the same tower." loading="lazy"><figcaption class="mono">cylinder 1&times; &middot; same landmark</figcaption></figure>
+  </div>
+
+  <div class="static-figs static-figs--sky">
+    <figure><img src="assets/img/skyline_planar_print.jpg" alt="Planar mosaic of all five frames." loading="lazy"><figcaption>Planar mosaic, five frames (11,138 &times; 3,829 px at full scale)</figcaption></figure>
+    <figure><img src="assets/img/skyline_cylinder_f1_print.jpg" alt="Cylindrical mosaic of all five frames at f = 2392 px." loading="lazy"><figcaption>Cylindrical mosaic, five frames, f = 2392 px (5,565 &times; 1,644 px)</figcaption></figure>
+  </div>
+
   <div class="bells">
     <header>
-      <p class="mono">bells &amp; whistles</p>
-      <h3>Two extras that actually helped</h3>
+      <p class="mono">two smaller extras</p>
+      <h3>Exposure matching and two-band blending</h3>
     </header>
     <div class="bells__grid">
       <div class="prose">
@@ -631,7 +742,7 @@
             <tr><td>III</td><td>1.31 / 1.46 / 1.80</td><td>0.80 / 0.80 / 0.74</td></tr>
           </tbody>
         </table>
-        <p class="small">R / G / B. The reference frame always keeps a gain of 1. This is global, so vignetting inside a single frame is still there.</p>
+        <p class="small">R / G / B. The reference frame always keeps a gain of 1; a frame that does not touch the reference (only in the skyline) is matched to its neighbor, which was matched first. This is global, so vignetting inside a single frame is still there.</p>
         <h4 class="small-head">2. Two-band blending</h4>
         <p>Feathering averages everything, including fine detail, so any misalignment turns into a double image. The two-band version splits each warped frame into a low-pass part (Gaussian, &sigma;&nbsp;=&nbsp;8&nbsp;px, built from repeated box filters with cumulative sums) and the high-frequency remainder. Low frequencies are blended with the feather weights so color still transitions smoothly; high frequencies are taken only from whichever frame has the most weight at that pixel. Sharp edges come from one photo, so they cannot double.</p>
         <p>It does not fix the alignment. The pillar's left edge still jumps at the seam, because the two frames really disagree about where it is. It just stops the disagreement from showing up as a ghost.</p>
@@ -654,33 +765,34 @@
   </div>
 </section>
 
-<!-- ===================================================== 06 · BEHIND -->
+<!-- ===================================================== 07 · BEHIND -->
 <section id="behind" class="sheet sheet--paper sheet--letter" aria-labelledby="h-behind">
   <div class="sheet__edge sheet__edge--top" aria-hidden="true"></div>
   <div class="letter">
-    <p class="sec-num">06 <span>/ reflection</span></p>
+    <p class="sec-num">07 <span>/ reflection</span></p>
     <h2 id="h-behind">Behind the <i>frame</i></h2>
     <div class="letter__body">
       <p>The biggest surprise was how much the result depended on the points rather than the code. Once <code>computeH</code> and the warps passed their tests, every visible problem in a mosaic traced back to a correspondence: a point on the wrong corner, or a point on something at a different depth from the rest. The per-point residuals were the most useful debugging tool I had. They flagged the pillar points in the caf&eacute; before I had looked at a single mosaic.</p>
       <p>Inverse warping makes sense once you think from the output's side. Every output pixel needs a value, so ask where it came from. The masks follow from the same idea. Without them a black pixel and an empty one look identical, and feathering would average real image with blank canvas near every border.</p>
       <p>Nearest neighbor versus bilinear was less dramatic than I expected at normal size, because none of these warps enlarge the photo much. Zoomed in, the stair-steps are obvious, and bilinear costs about two and a half times as much. That is an easy trade for anything meant to be looked at.</p>
-      <p>Feathering fixed the seams wherever the alignment was good (plate II is basically seamless) and made things worse in one specific way where it was not, by turning misalignment into ghosts. Exposure matching mattered more than I expected for the sunset. The limits are still visible: the stretched ends of plates I and II would look better with a cylindrical projection, which I did not implement, and the caf&eacute; really needed the phone to pivot more carefully about the lens.</p>
+      <p>Feathering fixed the seams wherever the alignment was good (plate II is basically seamless) and made things worse in one specific way where it was not, by turning misalignment into ghosts. Exposure matching mattered more than I expected for the sunset. The cylinder extra showed how much of plate I's bow-tie was just the flat projection: with five frames the planar result is mostly empty canvas and smeared edges, and wrapping the same homographies around a cylinder fixed both. The caf&eacute; is the one limit no projection can fix; it really needed the phone to pivot more carefully about the lens.</p>
     </div>
     <p class="hand letter__sign">more beyond the frame, always.</p>
-    <svg class="sticker sticker--apple sticker--letter" aria-hidden="true"><use href="#apple"/></svg>
+    <span class="letter__slate mono" aria-hidden="true">END OF REEL 1</span>
   </div>
   <div class="sheet__edge sheet__edge--bottom" aria-hidden="true"></div>
 </section>
 
-<!-- ===================================================== 07 · GALLERY -->
+<!-- ===================================================== 08 · GALLERY -->
 <section id="gallery" class="gallery" aria-labelledby="h-gallery">
   <header class="sec-head sec-head--center">
-    <p class="sec-num">07 <span>/ contact sheet</span></p>
+    <p class="sec-num">08 <span>/ contact sheet</span></p>
     <h2 id="h-gallery">Gallery</h2>
   </header>
   <div class="filmstrip">
     <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="assets/img/mosaic1_feathered_full.webp" aria-label="Open Last Light Over the Bay at full resolution"><img src="assets/img/mosaic1_feathered_2400.webp" alt="Last Light Over the Bay, final mosaic." loading="lazy"></button><figcaption class="mono"><b>I</b> Last Light Over the Bay</figcaption></figure>
     <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="assets/img/mosaic2_feathered_full.webp" aria-label="Open Zoology & Botany at full resolution"><img src="assets/img/mosaic2_feathered_2400.webp" alt="Zoology & Botany, final mosaic." loading="lazy"></button><figcaption class="mono"><b>II</b> Zoology & Botany</figcaption></figure>
+    <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="assets/img/skyline_cylinder_f1_full.webp" aria-label="Open the cylindrical skyline at full resolution"><img src="assets/img/skyline_cylinder_f1_2400.webp" alt="The whole horizon: five frames on a cylinder." loading="lazy"></button><figcaption class="mono"><b>IV</b> The Whole Horizon &middot; cylindrical</figcaption></figure>
     <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="assets/img/mosaic3_feathered_full.webp" aria-label="Open Halloween at the Tea Counter at full resolution"><img src="assets/img/mosaic3_feathered_2400.webp" alt="Halloween at the Tea Counter, final mosaic (feathered)." loading="lazy"></button><figcaption class="mono"><b>III</b> Halloween at the Tea Counter</figcaption></figure>
   </div>
   <p class="closing">There's always more beyond the frame.</p>
@@ -692,11 +804,11 @@
 <footer class="footer">
   <div class="footer__row">
     <p class="footer__title">Mosaic <i>of</i> Memories</p>
-    <p class="mono">CS180 / 280A &middot; Project 4A &middot; Part A</p>
+    <p class="mono">CS180 &middot; Project 4A &middot; Part A</p>
     <p><a href="https://sane24.github.io/mosaic-of-memories/">https://sane24.github.io/mosaic-of-memories/</a></p>
   </div>
-  <p class="footer__small">All photographs are my own. Every image on this page is an output of my Project 4A code or one of its input photos. Typefaces: Cormorant Garamond, Manrope, IBM Plex Mono and Caveat (SIL Open Font License, via Google Fonts). Textures, icons and the skyline are drawn in CSS and SVG for this page.</p>
-  <svg class="footer__apple" aria-hidden="true"><use href="#apple"/></svg>
+  <p class="footer__small">All photographs are my own. Every image on this page is an output of my Project 4A code or one of its input photos. Typefaces: Cormorant Garamond, Manrope, IBM Plex Mono and Caveat (SIL Open Font License, via Google Fonts). Textures, film details and icons are drawn in CSS and SVG for this page.</p>
+  <svg class="footer__reel" aria-hidden="true"><use href="#reel"/></svg>
 </footer>
 
 <dialog class="lightbox" data-lightbox aria-label="Full-resolution image">

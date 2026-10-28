@@ -42,20 +42,222 @@
     addEventListener('beforeprint', () => revealTargets.forEach(el => el.classList.add('is-in')));
   }
 
-  /* ---------- hero: gentle pointer parallax on the plate */
-  const plate = $('[data-parallax]');
-  if (plate && !reduced && matchMedia('(pointer: fine)').matches) {
-    let raf = 0;
-    addEventListener('pointermove', e => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const x = (e.clientX / innerWidth - .5), y = (e.clientY / innerHeight - .5);
-        plate.style.transform = `translate3d(${x * -10}px, ${y * -6}px, 0)`;
-      });
+
+  /* ---------- film counter, reel and gate follow the scroll */
+  const root = document.documentElement;
+  const counter = $('[data-counter]');
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const y = scrollY, max = Math.max(1, root.scrollHeight - innerHeight);
+      root.style.setProperty('--reel', `${y * .4}deg`);
+      root.style.setProperty('--gate', `${-y * .5}px`);
+      if (counter) counter.textContent = 'FR ' + String(Math.round(y / max * 999)).padStart(3, '0');
+      ticking = false;
     });
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  /* ---------- clapperboard slates on each section */
+  const slateIO = 'IntersectionObserver' in window && !reduced
+    ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-clapped'); slateIO.unobserve(e.target); } }), { rootMargin: '0px 0px -20% 0px' })
+    : null;
+  $$('.sec-num').forEach(num => {
+    const scene = (num.firstChild.textContent || '').trim();
+    if (!/^\d+$/.test(scene)) return;
+    const slate = document.createElement('p');
+    slate.className = 'slate';
+    slate.setAttribute('aria-hidden', 'true');
+    slate.innerHTML = `<span>ROLL<b>A</b></span><span>SCENE<b>${scene}</b></span><span>TAKE<b>1</b></span>`;
+    num.before(slate);
+    slateIO?.observe(slate);
+  });
+
+  /* ---------- leader countdown, once per visit */
+  const leader = $('[data-leader]');
+  let seen = false;
+  try { seen = sessionStorage.getItem('mom-leader') === '1'; } catch (e) { seen = true; }
+  const afterLeader = [];
+  const endLeader = () => {
+    if (!leader.classList.contains('is-on')) return;
+    leader.classList.add('is-out');
+    root.classList.remove('is-leader');
+    try { sessionStorage.setItem('mom-leader', '1'); } catch (e) {}
+    afterLeader.forEach(fn => fn());
+    setTimeout(() => leader.classList.remove('is-on'), 600);
+  };
+  if (leader && !reduced && !seen && scrollY < 50) {
+    leader.classList.add('is-on');
+    root.classList.add('is-leader');
+    const num = $('[data-leader-num]', leader), sweep = $('.leader__sweep', leader);
+    const t0 = performance.now(), per = 700, total = per * 3;
+    const tick = t => {
+      const e = t - t0;
+      if (e >= total || !leader.classList.contains('is-on')) return endLeader();
+      num.textContent = 3 - Math.floor(e / per);
+      const a = (e % per) / per * 2 * Math.PI, r = 78;
+      const x = 100 + r * Math.sin(a), y = 100 - r * Math.cos(a);
+      sweep.setAttribute('d', `M100 100 L100 22 A${r} ${r} 0 ${a > Math.PI ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z`);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    leader.addEventListener('click', endLeader);
+    addEventListener('keydown', endLeader, { once: true });
+  }
+  const whenReady = fn => (root.classList.contains('is-leader') ? afterLeader.push(fn) : fn());
+
+  /* ---------- timecode at 24 fps */
+  const tc = $('[data-ro="tc"]');
+  if (tc) {
+    const start = performance.now();
+    const pad = n => String(n).padStart(2, '0');
+    setInterval(() => {
+      const f = Math.floor((performance.now() - start) / (1000 / 24));
+      tc.textContent = `${pad(Math.floor(f / 86400))}:${pad(Math.floor(f / 1440) % 60)}:${pad(Math.floor(f / 24) % 60)}:${pad(f % 24)}`;
+    }, 1000 / 24);
+  }
+
+  /* ---------- focus ring: drag, scroll or arrow keys to pull focus */
+  const dial = $('[data-dial]'), plateEl = $('[data-plate]');
+  if (dial && plateEl) {
+    const ticks = $('[data-ticks]', dial);
+    for (let k = 0; k < 48; k++) {
+      const a = k / 48 * 2 * Math.PI, r2 = k % 4 ? 39 : 36;
+      ticks.appendChild(svgEl('line', { x1: 60 + 42 * Math.sin(a), y1: 60 - 42 * Math.cos(a), x2: 60 + r2 * Math.sin(a), y2: 60 - r2 * Math.cos(a) }));
+    }
+    let angle = 0;
+    const setAngle = a => {
+      angle = Math.max(-150, Math.min(150, a));
+      dial.style.setProperty('--ring', `${angle}deg`);
+      plateEl.style.setProperty('--defocus', `${(Math.abs(angle) / 150 * 7).toFixed(2)}px`);
+      dial.setAttribute('aria-valuenow', Math.round(angle / 1.5));
+    };
+    let drag = null;
+    const angleAt = e => { const r = dial.getBoundingClientRect(); return Math.atan2(e.clientX - r.left - r.width / 2, -(e.clientY - r.top - r.height / 2)) * 180 / Math.PI; };
+    dial.addEventListener('pointerdown', e => { drag = { from: angleAt(e), base: angle }; dial.setPointerCapture(e.pointerId); });
+    dial.addEventListener('pointermove', e => {
+      if (!drag) return;
+      let d = angleAt(e) - drag.from;
+      if (d > 180) d -= 360; if (d < -180) d += 360;
+      setAngle(drag.base + d);
+    });
+    dial.addEventListener('pointerup', () => { drag = null; });
+    dial.addEventListener('wheel', e => { e.preventDefault(); setAngle(angle + Math.sign(e.deltaY) * 8); }, { passive: false });
+    dial.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { setAngle(angle + 10); e.preventDefault(); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { setAngle(angle - 10); e.preventDefault(); }
+      if (e.key === 'Home') { setAngle(0); e.preventDefault(); }
+    });
+    if (!reduced) {
+      setAngle(-120);
+      whenReady(() => setTimeout(() => {
+        const t0 = performance.now();
+        const pull = t => { const k = Math.min(1, (t - t0) / 1600); setAngle(-120 * Math.pow(1 - k, 3)); if (k < 1 && !drag) requestAnimationFrame(pull); };
+        requestAnimationFrame(pull);
+      }, 900));
+    }
   }
 
   if (!D) return;
+
+
+  /* ---------- hero viewfinder: meter each source frame, release the shutter */
+  if (plateEl) {
+    const m = D.mosaics[0], ref = m.reference;
+    const svg = $('[data-frames]'), af = $('[data-af]'), tag = $('[data-frame-tag]');
+    const polys = m.frames.map(f => {
+      const pg = svgEl('polygon', { points: f.footprint.map(q => q.join(',')).join(' ') });
+      svg.appendChild(pg);
+      return pg;
+    });
+    const centroid = f => f.footprint.reduce((a, q) => [a[0] + q[0] / 4, a[1] + q[1] / 4], [0, 0]);
+    const inside = (pt, poly) => {
+      let c = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [xi, yi] = poly[i], [xj, yj] = poly[j];
+        if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    };
+    const ro = k => $(`[data-ro="${k}"]`);
+    const camRef = m.frames[ref].cam;
+    let current = -1;
+    const show = i => {
+      if (i === current) return;
+      current = i;
+      const c = m.frames[i].cam;
+      polys.forEach((pg, k) => pg.classList.toggle('on', k === i));
+      ro('frame').textContent = `FR ${String(i + 1).padStart(2, '0')}/${String(m.frames.length).padStart(2, '0')}`;
+      ro('f').textContent = (+c.f).toFixed(2).replace(/0$/, '');
+      ro('s').textContent = `1/${Math.round(1 / c.t)}`;
+      ro('iso').textContent = Math.round(c.iso);
+      ro('mm').textContent = Math.round(c.mm);
+      const ev = Math.log2((c.t * c.iso) / (camRef.t * camRef.iso));
+      ro('ev').textContent = `${ev >= 0 ? '+' : '−'}${Math.abs(ev).toFixed(1)} EV vs ref`;
+      ro('needle').style.setProperty('--ev', `${50 + Math.max(-2, Math.min(2, ev)) * 25}%`);
+      tag.textContent = `FRAME ${String(i + 1).padStart(2, '0')} · ${m.frames[i].file}${i === ref ? ' · REF' : ''}`;
+    };
+    show(ref);
+    let lockTimer = 0;
+    const meter = e => {
+      const r = plateEl.getBoundingClientRect();
+      const pt = [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
+      af.style.setProperty('--ax', `${pt[0] * 100}%`);
+      af.style.setProperty('--ay', `${pt[1] * 100}%`);
+      af.classList.remove('is-lock');
+      clearTimeout(lockTimer);
+      lockTimer = setTimeout(() => af.classList.add('is-lock'), 380);
+      const hits = m.frames.map((f, i) => i).filter(i => inside(pt, m.frames[i].footprint));
+      if (!hits.length) return;
+      hits.sort((a, b) => {
+        const ca = centroid(m.frames[a]), cb = centroid(m.frames[b]);
+        return Math.hypot(ca[0] - pt[0], ca[1] - pt[1]) - Math.hypot(cb[0] - pt[0], cb[1] - pt[1]);
+      });
+      show(hits[0]);
+    };
+    plateEl.addEventListener('pointermove', meter);
+    plateEl.addEventListener('pointerdown', meter);
+    plateEl.addEventListener('pointerleave', () => { polys.forEach(pg => pg.classList.remove('on')); current = -1; show(ref); polys[ref].classList.remove('on'); });
+
+    // shutter: a hexagonal iris closes and reopens
+    const iris = $('[data-iris]'), flash = $('[data-flash]');
+    const blades = svgEl('path', { 'fill-rule': 'evenodd' });
+    iris.appendChild(blades);
+    const irisAt = (r, rot) => {
+      let d = 'M-200 -200H200V200H-200Z M';
+      for (let k = 0; k < 6; k++) {
+        const a = rot + k * Math.PI / 3;
+        d += `${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}${k < 5 ? ' L' : 'Z'}`;
+      }
+      blades.setAttribute('d', d);
+    };
+    irisAt(200, 0);
+    let exposures = 1, firing = false;
+    const fire = () => {
+      if (firing) return;
+      firing = true;
+      exposures = exposures % 36 + 1;
+      ro('exp').textContent = `EXP ${String(exposures).padStart(2, '0')}/36`;
+      af.classList.add('is-lock');
+      if (reduced) { flash.classList.remove('is-on'); void flash.offsetWidth; flash.classList.add('is-on'); firing = false; return; }
+      const t0 = performance.now(), dur = 520;
+      const step = t => {
+        const k = Math.min(1, (t - t0) / dur);
+        const closed = k < .5 ? k / .5 : (1 - k) / .5;
+        irisAt(200 * Math.pow(1 - closed, 2) + .01, closed * 1.2);
+        if (k < 1) requestAnimationFrame(step);
+        else { irisAt(200, 0); firing = false; }
+        if (k >= .5 && !flash.classList.contains('is-on')) flash.classList.add('is-on');
+      };
+      flash.classList.remove('is-on');
+      requestAnimationFrame(step);
+    };
+    plateEl.addEventListener('click', fire);
+    plateEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); } });
+  }
 
   /* ---------- 01: overlap outlines on each print */
   $$('.print[data-frame]').forEach(fig => {
@@ -263,4 +465,36 @@
     });
     place();
   });
+
+  /* ---------- 06: planar vs cylinder, by radius */
+  const cyl = $('[data-cyl]');
+  if (cyl && D.skyline) {
+    const runs = D.skyline.runs;
+    const order = [1, 2, 3, 4, 5, 0];
+    const img = $('[data-cyl-img]', cyl), range = $('[data-cyl-range]', cyl);
+    const hud = k => $(`[data-hud="${k}"]`, cyl);
+    let shown = 3, preloaded = false;
+    const fmt = n => n.toLocaleString('en-US');
+    const set = v => {
+      const r = runs[order[v]];
+      if (!preloaded) { runs.forEach(x => { const i = new Image(); i.src = x.src; }); preloaded = true; }
+      img.classList.add('is-swap');
+      setTimeout(() => {
+        img.src = r.src;
+        img.alt = r.kind === 'planar' ? 'Planar mosaic of all five sunset frames.' : `Cylindrical mosaic at radius ${Math.round(r.f)} px.`;
+        img.onload = () => img.classList.remove('is-swap');
+      }, reduced ? 0 : 180);
+      hud('label').textContent = r.kind === 'planar' ? `PLANAR · shown at ${r.scale.toFixed(2)} scale` : `CYLINDER · f = ${Math.round(r.f)} px (${r.scale}×)`;
+      hud('size').textContent = `${fmt(r.w_full || r.w)} × ${fmt(r.h_full || r.h)}`;
+      hud('cov').textContent = `coverage ${Math.round(r.coverage * 100)}%`;
+      hud('mag').textContent = `stretch ${r.mag_median.toFixed(2)}× median, ${r.mag_max.toFixed(2)}× max`;
+      shown = v;
+    };
+    range.addEventListener('input', () => set(+range.value));
+    $('[data-cyl-toggle]', cyl).addEventListener('click', () => { range.value = shown === 5 ? 2 : 5; set(+range.value); });
+    const openFull = () => openLightbox(runs[order[shown]].full, img.alt);
+    $('[data-cyl-full]', cyl).addEventListener('click', openFull);
+    img.addEventListener('click', openFull);
+    range.value = 2;
+  }
 })();
