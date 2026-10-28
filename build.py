@@ -269,8 +269,51 @@ def build_rect(r: dict, values: dict, data: dict) -> None:
     values[f"{pre}.mag"] = f"{r['zoom_magnification'][0]:.2f} to {r['zoom_magnification'][1]:.2f}"
 
 
+def skyline_outlines(sk: dict) -> dict:
+    """Outline of every frame on each skyline canvas, as fractions of that canvas."""
+    frames = sk["frames"]
+    ref = sk["reference"]
+    step = {p["from"]: (p["to"], np.array(p["H"])) for p in sk["pairs"]}
+    to_ref = []
+    for i in range(len(frames)):
+        H, k = np.eye(3), i
+        while k != ref:
+            k, Hs = step[k]
+            H = Hs @ H
+        to_ref.append(H / H[2, 2])
+    w, h = frames[ref]["size"]
+    cx, cy = (w - 1) / 2, (h - 1) / 2
+    borders = []
+    for f in frames:
+        fw, fh = f["size"]
+        t = np.linspace(0, 1, 25)
+        borders.append(np.concatenate([
+            np.column_stack((t * (fw - 1), np.zeros_like(t))),
+            np.column_stack((np.full_like(t, fw - 1), t * (fh - 1))),
+            np.column_stack((t[::-1] * (fw - 1), np.full_like(t, fh - 1))),
+            np.column_stack((np.zeros_like(t), t[::-1] * (fh - 1)))]))
+    out = {}
+    p = sk["planar"]
+    S = np.diag([p["scale"], p["scale"], 1.0])
+    pts = [apply_h(S @ H, b) for H, b in zip(to_ref, borders)]
+    corners = np.concatenate([apply_h(S @ H, [[0, 0], [f["size"][0] - 1, 0], [f["size"][0] - 1, f["size"][1] - 1],
+                                                [0, f["size"][1] - 1]]) for H, f in zip(to_ref, frames)])
+    o = np.floor(corners.min(axis=0))
+    out["planar"] = [((q - o) / [p["width"], p["height"]]).round(4).tolist() for q in pts]
+    for c in sk["cylinder"]:
+        f = c["f"]
+        uv = []
+        for H, b in zip(to_ref, borders):
+            X, Y = (apply_h(H, b) - [cx, cy]).T
+            uv.append(np.column_stack((f * np.arctan2(X, f), f * Y / np.hypot(X, f))))
+        o = np.floor(np.concatenate(uv).min(axis=0))
+        out[c["scale"]] = [((q - o) / [c["width"], c["height"]]).round(4).tolist() for q in uv]
+    return out
+
+
 def build_skyline(sk: dict, values: dict, data: dict) -> None:
     out = {"runs": [], "frames": []}
+    outlines = skyline_outlines(sk)
     runs = [dict(sk["planar"], kind="planar", label="Planar")] + [
         dict(c, kind="cylinder", label=f"{c['scale']:g}\u00d7 f") for c in sk["cylinder"]]
     for r in runs:
@@ -282,7 +325,8 @@ def build_skyline(sk: dict, values: dict, data: dict) -> None:
                  "full": save_webp(fit(im, 6000), f"{tag}_full.webp", quality=80),
                  "w": W, "h": H, "coverage": r["coverage"],
                  "mag_median": r["mag_median"] / full_scale, "mag_max": r["mag_max"] / full_scale,
-                 "f": r.get("f"), "scale": r["scale"]}
+                 "f": r.get("f"), "scale": r["scale"],
+                 "polys": outlines["planar" if r["kind"] == "planar" else r["scale"]]}
         if r["kind"] == "planar":
             entry["w_full"], entry["h_full"] = round(W / full_scale), round(H / full_scale)
         out["runs"].append(entry)
@@ -318,6 +362,8 @@ def build_skyline(sk: dict, values: dict, data: dict) -> None:
     for i, f in enumerate(sk["frames"]):
         src = Image.open(PROJECT / f["source"]).convert("RGB")
         values[f"sk.f{i + 1}.src"] = save_jpg(fit(src, long_side=900), f"skyline_frame{i + 1}.jpg", quality=82)
+        out["frames"].append({"file": f["file"], "exif": exif_line(f["exif"]), "ref": i == sk["reference"],
+                              "src": save_jpg(fit(src, long_side=1400), f"skyline_frame{i + 1}_lg.jpg", quality=84)})
         values[f"sk.f{i + 1}.file"] = f["file"]
         values[f"sk.f{i + 1}.exif"] = exif_line(f["exif"])
     for k, pr in enumerate(sk["pairs"]):
