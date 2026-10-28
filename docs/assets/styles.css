@@ -817,18 +817,6 @@ body::after { inset: 0; animation: none; mix-blend-mode: normal; opacity: .035; 
 .counter { display: flex; align-items: center; gap: 6px; color: #e7a23a; font-size: 10.5px; white-space: nowrap; padding-left: 4px; }
 .counter svg { width: 14px; height: 14px; color: #e7a23a; transform: rotate(var(--reel, 0deg)); }
 
-/* leader countdown */
-.leader { position: absolute; inset: 0; z-index: 30; display: none; place-items: center; align-content: center; gap: 18px; background: #0b0d10; cursor: pointer; }
-.js .leader.is-on { display: grid; }
-.leader svg { width: min(46vh, 70vw); height: auto; color: #d8cdb8; }
-.leader svg line { stroke: rgba(216, 205, 184, .45); stroke-width: .8; }
-.leader__ring { fill: none; stroke: rgba(216, 205, 184, .7); stroke-width: 1.4; }
-.leader__sweep { fill: rgba(216, 205, 184, .14); }
-.leader text { font: 400 92px/1 var(--serif); fill: #f0e7da; text-anchor: middle; }
-.leader p { color: #8f8a80; margin: 0; text-align: center; }
-.leader.is-out { animation: leaderOut .55s var(--ease) forwards; }
-@keyframes leaderOut { to { opacity: 0; transform: scale(1.04); visibility: hidden; } }
-
 /* film gate around the hero plate */
 .hero__plate { position: relative; }
 .gate { position: absolute; inset: -22px -6px; pointer-events: none; z-index: 1; }
@@ -943,11 +931,11 @@ body::after { inset: 0; animation: none; mix-blend-mode: normal; opacity: .035; 
   .cyl__frame { aspect-ratio: 2.4; }
   .gate { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .leader { display: none !important; } .rec i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .rec i { animation: none; } }
 @media print {
   :root { color-scheme: light; }
   html { background: #fff !important; }
-  .leader, .gate, .plate__frames, .plate__af, .plate__iris, .plate__flash, .plate__tag, .counter, .slate, .cyl, .lensring, .letter__slate, .footer__reel, .closeups figcaption:empty { display: none !important; }
+  .gate, .plate__frames, .plate__af, .plate__iris, .plate__flash, .plate__tag, .counter, .slate, .cyl, .lensring, .letter__slate, .footer__reel, .closeups figcaption:empty { display: none !important; }
   .plate { filter: none !important; }
   .sheet--extras { break-before: page; }
   .contact-strip { background: #fff; padding: 0; gap: 2mm; }
@@ -964,7 +952,6 @@ body::after { inset: 0; animation: none; mix-blend-mode: normal; opacity: .035; 
   .runs__table td, .runs__table th { padding: 1.5mm 2mm; font-size: 8.5pt; }
   .runs__table tr.is-chosen td { color: #7b3547; }
 }
-.is-leader .hero *, .is-leader .hero *::before { animation-play-state: paused !important; }
 .plate-wrap { position: relative; }
 .gate { inset: -24px -4px; }
 .gate__strip--bottom { bottom: 0; }

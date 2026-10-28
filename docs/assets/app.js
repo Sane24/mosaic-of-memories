@@ -76,38 +76,7 @@
     slateIO?.observe(slate);
   });
 
-  /* ---------- leader countdown, once per visit */
-  const leader = $('[data-leader]');
-  let seen = false;
-  try { seen = sessionStorage.getItem('mom-leader') === '1'; } catch (e) { seen = true; }
-  const afterLeader = [];
-  const endLeader = () => {
-    if (!leader.classList.contains('is-on')) return;
-    leader.classList.add('is-out');
-    root.classList.remove('is-leader');
-    try { sessionStorage.setItem('mom-leader', '1'); } catch (e) {}
-    afterLeader.forEach(fn => fn());
-    setTimeout(() => leader.classList.remove('is-on'), 600);
-  };
-  if (leader && !reduced && !seen && scrollY < 50) {
-    leader.classList.add('is-on');
-    root.classList.add('is-leader');
-    const num = $('[data-leader-num]', leader), sweep = $('.leader__sweep', leader);
-    const t0 = performance.now(), per = 700, total = per * 3;
-    const tick = t => {
-      const e = t - t0;
-      if (e >= total || !leader.classList.contains('is-on')) return endLeader();
-      num.textContent = 3 - Math.floor(e / per);
-      const a = (e % per) / per * 2 * Math.PI, r = 78;
-      const x = 100 + r * Math.sin(a), y = 100 - r * Math.cos(a);
-      sweep.setAttribute('d', `M100 100 L100 22 A${r} ${r} 0 ${a > Math.PI ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z`);
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    leader.addEventListener('click', endLeader);
-    addEventListener('keydown', endLeader, { once: true });
-  }
-  const whenReady = fn => (root.classList.contains('is-leader') ? afterLeader.push(fn) : fn());
+  const whenReady = fn => fn();
 
   /* ---------- timecode at 24 fps */
   const tc = $('[data-ro="tc"]');
