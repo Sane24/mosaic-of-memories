@@ -208,6 +208,13 @@ def build_mosaic(mo: dict, values: dict, data: dict) -> None:
         values[f"m{key}.f{i + 1}.warped"] = fr["warped"]
         values[f"m{key}.f{i + 1}.share"] = fr["share"]
         values[f"m{key}.f{i + 1}.gain"] = " / ".join(f"{g:.2f}" for g in mo["exposure_gains"][i])
+        e = mo["frames"][i]["exif"]
+        values[f"m{key}.f{i + 1}.fnum"] = f"{e.get('FNumber', 0):.2f}".rstrip("0").rstrip(".")
+        values[f"m{key}.f{i + 1}.shutter"] = f"1/{round(1 / e['ExposureTime'])}" if e.get("ExposureTime") else ""
+        values[f"m{key}.f{i + 1}.iso"] = str(int(e.get("ISOSpeedRatings", 0)))
+        values[f"m{key}.f{i + 1}.f35"] = str(int(e.get("FocalLengthIn35mmFilm", 0)))
+        values[f"m{key}.f{i + 1}.model"] = e.get("Model", "")
+        values[f"m{key}.f{i + 1}.clock"] = e.get("DateTimeOriginal", "")[11:16]
     for k, p in enumerate(out["pairs"]):
         pre = f"m{key}.p{k + 1}"
         values[f"{pre}.matrix"] = p["matrix"]
