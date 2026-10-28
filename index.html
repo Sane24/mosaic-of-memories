@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mosaic of Memories</title>
+<meta name="description" content="CS180/280A Project 4A: image warping and mosaicing. Manual homographies, inverse warping, perspective rectification and feathered photo mosaics.">
+<meta name="color-scheme" content="dark light">
+<link rel="canonical" href="https://sane24.github.io/mosaic-of-memories/">
+<link rel="icon" href="assets/apple.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<script>document.documentElement.classList.add('js')</script>
+</head>
+<body id="top">
+
+<svg width="0" height="0" class="defs" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="apple" viewBox="0 0 64 64">
+      <path d="M33 17c-2-6 1-12 7-14-1 6-3 10-7 14z" fill="#3d5a3a"/>
+      <path d="M32 19c-6-4-17-4-22 4-6 10-1 27 7 34 4 4 8 4 11 2 2-1 6-1 8 0 3 2 7 2 11-2 8-7 12-23 6-33-5-8-15-8-21-5z" fill="currentColor"/>
+      <path d="M17 27c2-4 6-6 10-5-4 2-7 5-8 10z" fill="#fff" opacity=".35"/>
+      <path d="M32 19c0-4 0-7 2-10" stroke="#3b2a1f" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="aperture" viewBox="0 0 48 48">
+      <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <g fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M24 3 L33 20"/><path d="M42 14 L29 25"/><path d="M42 34 L25 31"/>
+        <path d="M24 45 L15 28"/><path d="M6 34 L19 23"/><path d="M6 14 L23 17"/>
+      </g>
+      <circle cx="24" cy="24" r="7" fill="none" stroke="currentColor" stroke-width="1.2"/>
+    </symbol>
+    <symbol id="mask" viewBox="0 0 200 90">
+      <path d="M100 30c-14-18-48-28-80-22C6 11 0 24 2 38c3 22 22 42 46 46 22 4 36-6 46-22 2-3 10-3 12 0 10 16 24 26 46 22 24-4 43-24 46-46 2-14-4-27-18-30-32-6-66 4-80 22z" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<a class="skip" href="#fragments">Skip to the project</a>
+
+<header class="topbar">
+  <a class="brand" href="#top" aria-label="Mosaic of Memories, back to top">
+    <svg class="brand__apple" aria-hidden="true"><use href="#apple"/></svg>
+    <span>Mosaic <i>of</i> Memories</span>
+  </a>
+  <nav class="topnav" aria-label="Sections">
+    <a href="#fragments"><b>01</b> Fragments</a>
+    <a href="#points"><b>02</b> Same points</a>
+    <a href="#perspective"><b>03</b> Perspective</a>
+    <a href="#stitching"><b>04</b> Stitching</a>
+    <a href="#seams"><b>05</b> Seams</a>
+    <a href="#behind"><b>06</b> Behind</a>
+    <a href="#gallery"><b>07</b> Gallery</a>
+  </nav>
+  <a class="permalink" href="https://sane24.github.io/mosaic-of-memories/"><span class="permalink__dot" aria-hidden="true"></span>sane24.github.io/mosaic-of-memories</a>
+</header>
+
+<main id="part-a" data-part="a">
+
+<!-- ===================================================== 00 · OPENING -->
+<section class="hero" aria-labelledby="title">
+  <div class="hero__sky" aria-hidden="true"></div>
+  <div class="hero__meta">
+    <span>CS180 / 280A</span><span>Project 04A</span><span>Image Warping &amp; Mosaicing</span><span>Fall 2026</span>
+  </div>
+  <p class="print-url">Website: <a href="https://sane24.github.io/mosaic-of-memories/">https://sane24.github.io/mosaic-of-memories/</a></p>
+
+  <h1 id="title" class="hero__title">
+    <span class="w1">Mosaic</span>
+    <span class="w2"><i>of</i></span>
+    <span class="w3">Memories</span>
+  </h1>
+  <p class="hero__sub">Fragments of a world, stitched into something whole.</p>
+
+  <figure class="hero__plate" style="--ar: 2.3761">
+    <div class="plate" data-parallax="0.6">
+      <img class="plate__layer l1" src="assets/img/mosaic1_warped1.webp" alt="" aria-hidden="true">
+      <img class="plate__layer l3" src="assets/img/mosaic1_warped3.webp" alt="" aria-hidden="true">
+      <img class="plate__layer l2" src="assets/img/mosaic1_warped2.webp" alt="" aria-hidden="true">
+      <img class="plate__final" src="assets/img/mosaic1_feathered_2400.webp" alt="Three sunset photographs over the bay stitched into one wide panorama; the outer frames fan out into a bow-tie shape.">
+      <span class="datestamp" aria-hidden="true">'26 10 27 &nbsp;17:57</span><span class="vf vf--tl"></span><span class="vf vf--tr"></span><span class="vf vf--bl"></span><span class="vf vf--br"></span>
+    </div>
+    <figcaption class="hero__cap">
+      <span>Plate I</span><span>Last Light Over the Bay</span><span>3 frames</span><span>7,031 &times; 2,959 px</span><span>frames 01 to 03, warped and feathered</span>
+    </figcaption>
+  </figure>
+
+  <div class="hero__intro">
+    <p>Nine photographs from one afternoon around Berkeley, a few dozen points I matched by hand, and a 3&times;3 matrix for every pair. This is my write-up for Part A of the image mosaicing project: recovering homographies, warping with my own nearest-neighbor and bilinear samplers, rectifying two photos, and blending three panoramas.</p>
+    <svg class="sticker sticker--apple" aria-hidden="true"><use href="#apple"/></svg>
+  </div>
+
+  <svg class="skyline" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 120V92h40v-14h18v14h30V70h12V54l6-10 6 10v16h12v22h44V80h26V62h8V40l5-8 5 8v22h8v18h30v12h52V74h14V58h20V30l4-14 4 14v28h20v16h14v18h60V66h10V50h22v16h10v26h48V84h30V60l12-22 12 22v24h30v8h70V70h16V48h6V36h4V24l3-8 3 8v12h4v12h6v22h16v22h56V78h22V64h36v28h40V58h8V44l10-14 10 14v14h8v34h52V80h20V50h6l8-16 8 16h6v42h44V70h28v22h40V60h14V46h16v14h14v32h60v28z" fill="currentColor"/>
+  </svg>
+  <a class="hero__scroll" href="#fragments">Begin with the frames</a>
+</section>
+
+<!-- ===================================================== 01 · FRAGMENTS -->
+<section id="fragments" class="sheet sheet--paper" aria-labelledby="h-fragments">
+  <div class="sheet__edge sheet__edge--top" aria-hidden="true"></div>
+  <header class="sec-head sec-head--split">
+    <p class="sec-num">01 <span>/ A.1 Shoot the pictures</span></p>
+    <h2 id="h-fragments">Fragments</h2>
+    <p class="sec-lede">Three sets of three overlapping frames, laid out like a contact sheet. The dashed outline on each print is the part of the scene its neighbor also saw, computed from the recovered homography.</p>
+  </header>
+
+  <div class="capture-notes">
+    <p>Everything was shot on my iPhone 14 Pro on October 27, 2026. For each mosaic I took a middle frame and then turned left and right from the same spot, so each set is three frames taken within a few seconds of each other (the sunset set spans about a minute and a half). The campus and caf&eacute; sets use the main 24&nbsp;mm-equivalent lens. For the sunset I used the 2&times; setting (46 to 48&nbsp;mm equivalent), which makes the bay bigger in frame but leaves less overlap between shots.</p>
+    <p>A homography lines two photos up exactly only when the camera rotates about its own optical center or the scene is flat. A phone never pivots perfectly about its lens, so how well each set works depends mostly on how far away the subject is. The phone also picked its own exposure for every frame, which matters later: in the sunset set the shutter speed ranges from 1/10870&nbsp;s to 1/4184&nbsp;s.</p>
+  </div>
+
+  <div class="contact">
+    <article class="strip strip--1" aria-label="Set I, frames 01 to 03">
+      <div class="strip__label">
+        <p class="hand">sunset over the bay, 5:56 pm</p>
+        <p class="mono">SET I &middot; FRAMES 01, 02, 03 &middot; overlap 26% / 28%</p>
+        <p>Looking west at sunset. The Golden Gate Bridge and the San Francisco skyline are on the horizon, and the middle frame is the reference.</p>
+      </div>
+      <div class="strip__prints">
+        <figure class="print print--tilt-l" data-frame="0:0"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic1_frame1.jpg" alt="Frame 01: sunset sky over rooftops, with tall grass in the foreground on the left." loading="lazy"></div><figcaption><b>FRAME 01</b> mosaic_1a.jpg<br><span>17:56 &middot; 46mm eq &middot; f/1.78 &middot; 1/4184s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--ref" data-frame="0:1"><span class="tape tape--r"></span><div class="print__img"><img src="assets/img/mosaic1_frame2.jpg" alt="Frame 02: the sun low over the bay, with the San Francisco skyline on the horizon." loading="lazy"></div><figcaption><b>FRAME 02</b> mosaic_1b.jpg <em>reference</em><br><span>17:57 &middot; 48mm eq &middot; f/1.78 &middot; 1/10870s &middot; ISO 64</span></figcaption></figure>
+        <figure class="print print--tilt-r" data-frame="0:2"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic1_frame3.jpg" alt="Frame 03: the sun and the Golden Gate Bridge, with an apartment building on the right." loading="lazy"></div><figcaption><b>FRAME 03</b> mosaic_1c.jpg<br><span>17:57 &middot; 48mm eq &middot; f/1.78 &middot; 1/8929s &middot; ISO 64</span></figcaption></figure>
+      </div>
+    </article>
+
+    <article class="strip strip--2" aria-label="Set II, frames 04 to 06">
+      <div class="strip__label">
+        <p class="hand">Zoology &amp; Botany, 4:14 pm</p>
+        <p class="mono">SET II &middot; FRAMES 04, 05, 06 &middot; overlap 54% / 57%</p>
+        <p>The old Life Sciences Building on campus, with ZOOLOGY and BOTANY carved over its two wings and the Chan Shun Auditorium entrance in the middle.</p>
+      </div>
+      <div class="strip__prints">
+        <figure class="print print--tilt-r" data-frame="1:0"><span class="tape tape--r"></span><div class="print__img"><img src="assets/img/mosaic2_frame1.jpg" alt="Frame 04: lawn and modern buildings, with the left wing of the Zoology building at the edge." loading="lazy"></div><figcaption><b>FRAME 04</b> mosaic_2a.jpg<br><span>16:14 &middot; 24mm eq &middot; f/1.78 &middot; 1/4545s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--ref" data-frame="1:1"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic2_frame2.jpg" alt="Frame 05: the white facade with Chan Shun Auditorium doors, steps and a tall evergreen in front." loading="lazy"></div><figcaption><b>FRAME 05</b> mosaic_2b.jpg <em>reference</em><br><span>16:14 &middot; 24mm eq &middot; f/1.78 &middot; 1/3155s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--tilt-l" data-frame="1:2"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic2_frame3.jpg" alt="Frame 06: the Botany wing with tall windows, trees and lawn on the right." loading="lazy"></div><figcaption><b>FRAME 06</b> mosaic_2c.jpg<br><span>16:14 &middot; 24mm eq &middot; f/1.78 &middot; 1/2882s &middot; ISO 80</span></figcaption></figure>
+      </div>
+    </article>
+
+    <article class="strip strip--3" aria-label="Set III, frames 07 to 09">
+      <div class="strip__label">
+        <p class="hand">tea counter, Halloween week, 4:25 pm</p>
+        <p class="mono">SET III &middot; FRAMES 07, 08, 09 &middot; overlap 52% / 47%</p>
+        <p>Inside Chicha San Chen. Menu screens, a HAPPY HALLOWEEN banner, a concrete pillar, and people a few meters away who kept moving between shots.</p>
+      </div>
+      <div class="strip__prints">
+        <figure class="print print--tilt-l" data-frame="2:0"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic3_frame1.jpg" alt="Frame 07: window wall, a wooden planter with an olive tree, and the order counter." loading="lazy"></div><figcaption><b>FRAME 07</b> mosaic_3a.jpg<br><span>16:25 &middot; 24mm eq &middot; f/1.78 &middot; 1/130s &middot; ISO 64</span></figcaption></figure>
+        <figure class="print print--ref" data-frame="2:1"><span class="tape tape--r"></span><div class="print__img"><img src="assets/img/mosaic3_frame2.jpg" alt="Frame 08: the counter with menu screens, the HAPPY banner and a seated customer." loading="lazy"></div><figcaption><b>FRAME 08</b> mosaic_3b.jpg <em>reference</em><br><span>16:25 &middot; 24mm eq &middot; f/1.78 &middot; 1/120s &middot; ISO 80</span></figcaption></figure>
+        <figure class="print print--tilt-r" data-frame="2:2"><span class="tape"></span><div class="print__img"><img src="assets/img/mosaic3_frame3.jpg" alt="Frame 09: the concrete pillar with a MAX OCCUPANCY sign, tables and the pick-up area." loading="lazy"></div><figcaption><b>FRAME 09</b> mosaic_3c.jpg<br><span>16:25 &middot; 24mm eq &middot; f/1.78 &middot; 1/120s &middot; ISO 80</span></figcaption></figure>
+      </div>
+    </article>
+  </div>
+  <p class="aside-note">Overlap is the share of each side frame that lands inside the middle frame once warped. The course suggests 40 to 70%. Sets II and III are in that range; the sunset set is closer to 25%.</p>
+  <div class="sheet__edge sheet__edge--bottom" aria-hidden="true"></div>
+</section>
+
+<div class="stitch-rule" aria-hidden="true"></div>
+
+<!-- ===================================================== 02 · SAME POINTS -->
+<section id="points" class="sheet sheet--night" aria-labelledby="h-points">
+  <header class="sec-head sec-head--split">
+    <p class="sec-num">02 <span>/ A.2 Recover homographies</span></p>
+    <h2 id="h-points">Finding the <i>same</i> points</h2>
+    <p class="sec-lede">Two photos of the same place disagree about where everything is. A handful of landmarks they agree on is enough to work out the rest.</p>
+  </header>
+
+  <div class="prose prose--two">
+    <p>For each pair I looked for landmarks I could place exactly in both photos: corners of window frames, letters carved into the facade, the top of a Golden Gate tower, the corners of the menu screens. I tried to spread them across the whole overlap instead of clustering them on one object, since points bunched together only constrain the transformation near that spot. Each side frame is matched to the middle frame, so every mosaic has two point sets and two homographies.</p>
+    <p>I placed the points on the full-resolution 4032&nbsp;&times;&nbsp;3024 photos and saved them to JSON in original-pixel coordinates. The pipeline works on a downsized copy (long side 1800&nbsp;px), so it rescales the points on load and never needs them re-picked. All the pixel errors below are at that 1800&nbsp;px working size.</p>
+  </div>
+
+  <div class="threads" data-threads>
+    <div class="threads__tabs" role="tablist" aria-label="Choose a photo pair"></div>
+    <div class="threads__board">
+      <div class="threads__stage">
+        <div class="threads__pair">
+          <figure class="threads__img"><img alt="" data-side="a"><figcaption class="mono" data-cap="a"></figcaption></figure>
+          <figure class="threads__img"><img alt="" data-side="b"><figcaption class="mono" data-cap="b"></figcaption></figure>
+        </div>
+        <svg class="threads__svg" aria-hidden="true"></svg>
+      </div>
+      <aside class="threads__card">
+        <p class="mono threads__stat" data-stat></p>
+        <ol class="threads__legend" data-legend></ol>
+        <p class="threads__hint">Hover or focus a landmark to follow its thread. Numbers in brackets are the leftover error for that point, in pixels.</p>
+      </aside>
+    </div>
+    <p class="live-only">Interactive on the live site. The printed version shows the saved correspondence figures below.</p>
+  </div>
+
+  <div class="static-figs">
+    <figure><img src="assets/img/mosaic1_corr_12.jpg" alt="Correspondences between mosaic_1a.jpg and mosaic_1b.jpg, numbered in matching order." loading="lazy"><figcaption>mosaic_1a.jpg &rarr; mosaic_1b.jpg: 10 points, mean error 1.04 px</figcaption></figure>
+    <figure><img src="assets/img/mosaic1_corr_32.jpg" alt="Correspondences between mosaic_1c.jpg and mosaic_1b.jpg." loading="lazy"><figcaption>mosaic_1c.jpg &rarr; mosaic_1b.jpg: 8 points, mean error 0.54 px</figcaption></figure>
+    <figure><img src="assets/img/mosaic2_corr_12.jpg" alt="Correspondences between mosaic_2a.jpg and mosaic_2b.jpg." loading="lazy"><figcaption>mosaic_2a.jpg &rarr; mosaic_2b.jpg: 13 points, mean error 1.39 px</figcaption></figure>
+    <figure><img src="assets/img/mosaic2_corr_32.jpg" alt="Correspondences between mosaic_2c.jpg and mosaic_2b.jpg." loading="lazy"><figcaption>mosaic_2c.jpg &rarr; mosaic_2b.jpg: 14 points, mean error 1.86 px</figcaption></figure>
+    <figure><img src="assets/img/mosaic3_corr_12.jpg" alt="Correspondences between mosaic_3a.jpg and mosaic_3b.jpg." loading="lazy"><figcaption>mosaic_3a.jpg &rarr; mosaic_3b.jpg: 10 points, mean error 2.59 px</figcaption></figure>
+    <figure><img src="assets/img/mosaic3_corr_32.jpg" alt="Correspondences between mosaic_3c.jpg and mosaic_3b.jpg." loading="lazy"><figcaption>mosaic_3c.jpg &rarr; mosaic_3b.jpg: 7 points, mean error 1.12 px</figcaption></figure>
+  </div>
+
+  <div class="math">
+    <div class="math__card index-card">
+      <p class="mono card-label">the model</p>
+      <p>A homography maps a point <var>(x,&nbsp;y)</var> in one photo to <var>(u,&nbsp;v)</var> in the other through homogeneous coordinates:</p>
+      <div class="eq">
+        <span class="bm bm--col"><span><var>w</var><var>u</var></span><span><var>w</var><var>v</var></span><span><var>w</var></span></span>
+        <span class="op">=</span>
+        <span class="bm bm--3"><span>h<sub>11</sub></span><span>h<sub>12</sub></span><span>h<sub>13</sub></span><span>h<sub>21</sub></span><span>h<sub>22</sub></span><span>h<sub>23</sub></span><span>h<sub>31</sub></span><span>h<sub>32</sub></span><span>1</span></span>
+        <span class="bm bm--col"><span><var>x</var></span><span><var>y</var></span><span>1</span></span>
+      </div>
+      <p>Setting h<sub>33</sub>&nbsp;=&nbsp;1 fixes the scale, leaving eight unknowns. Dividing out <var>w</var> and multiplying through gives two equations that are linear in the unknowns:</p>
+      <div class="eq eq--lines">
+        <span>h<sub>11</sub><var>x</var> + h<sub>12</sub><var>y</var> + h<sub>13</sub> &minus; h<sub>31</sub><var>x</var><var>u</var> &minus; h<sub>32</sub><var>y</var><var>u</var> = <var>u</var></span>
+        <span>h<sub>21</sub><var>x</var> + h<sub>22</sub><var>y</var> + h<sub>23</sub> &minus; h<sub>31</sub><var>x</var><var>v</var> &minus; h<sub>32</sub><var>y</var><var>v</var> = <var>v</var></span>
+      </div>
+    </div>
+
+    <div class="math__card math__card--wide index-card">
+      <p class="mono card-label">stacking every correspondence</p><p class="card-title">A<b>h</b> = <b>b</b></p>
+      <div class="eq eq--scroll">
+        <span class="bm bm--8">
+          <span><var>x</var><sub>1</sub></span><span><var>y</var><sub>1</sub></span><span>1</span><span>0</span><span>0</span><span>0</span><span>&minus;<var>x</var><sub>1</sub><var>u</var><sub>1</sub></span><span>&minus;<var>y</var><sub>1</sub><var>u</var><sub>1</sub></span>
+          <span>0</span><span>0</span><span>0</span><span><var>x</var><sub>1</sub></span><span><var>y</var><sub>1</sub></span><span>1</span><span>&minus;<var>x</var><sub>1</sub><var>v</var><sub>1</sub></span><span>&minus;<var>y</var><sub>1</sub><var>v</var><sub>1</sub></span>
+          <span>&#8942;</span><span>&#8942;</span><span>&#8942;</span><span>&#8942;</span><span>&#8942;</span><span>&#8942;</span><span>&#8942;</span><span>&#8942;</span>
+          <span><var>x</var><sub>n</sub></span><span><var>y</var><sub>n</sub></span><span>1</span><span>0</span><span>0</span><span>0</span><span>&minus;<var>x</var><sub>n</sub><var>u</var><sub>n</sub></span><span>&minus;<var>y</var><sub>n</sub><var>u</var><sub>n</sub></span>
+          <span>0</span><span>0</span><span>0</span><span><var>x</var><sub>n</sub></span><span><var>y</var><sub>n</sub></span><span>1</span><span>&minus;<var>x</var><sub>n</sub><var>v</var><sub>n</sub></span><span>&minus;<var>y</var><sub>n</sub><var>v</var><sub>n</sub></span>
+        </span>
+        <span class="bm bm--col"><span>h<sub>11</sub></span><span>h<sub>12</sub></span><span>h<sub>13</sub></span><span>h<sub>21</sub></span><span>h<sub>22</sub></span><span>h<sub>23</sub></span><span>h<sub>31</sub></span><span>h<sub>32</sub></span></span>
+        <span class="op">=</span>
+        <span class="bm bm--col"><span><var>u</var><sub>1</sub></span><span><var>v</var><sub>1</sub></span><span>&#8942;</span><span><var>u</var><sub>n</sub></span><span><var>v</var><sub>n</sub></span></span>
+      </div>
+      <p>Every pair of points adds two rows, so <var>n</var> correspondences give a 2<var>n</var>&nbsp;&times;&nbsp;8 system. Four points are the minimum, and with exactly four the system is square and the homography passes through them exactly. With 7 to 14 points per pair the system is overdetermined, and <code>computeH</code> solves it by least squares (<code>np.linalg.lstsq</code>, minimizing &Vert;A<b>h</b>&nbsp;&minus;&nbsp;<b>b</b>&Vert;&sup2;). That is the point of using extra matches: a pixel or two of error in where I put a point gets averaged against the others instead of going straight into H.</p>
+      <p>One practical detail: before building A, I shift and scale each point set so its centroid is at the origin and its average distance from it is &radic;2, then undo that transform on the result. Raw pixel coordinates make the <var>xu</var> columns about a million times larger than the constant column, and the normalization keeps the solve well conditioned.</p>
+    </div>
+
+    <div class="math__card math__card--h index-card" data-hcard>
+      <p class="mono card-label" data-hlabel>recovered H: mosaic_2a.jpg &rarr; mosaic_2b.jpg</p>
+      <div data-hmatrix><div class="matrix " role="img" aria-label="3 by 3 homography matrix"><span>2.4756</span><span>&minus;0.1842</span><span>&minus;1802.49</span><span>0.6930</span><span>1.9308</span><span>&minus;798.80</span><span>8.538<small>&times;10<sup>-4</sup></small></span><span>&minus;8.169<small>&times;10<sup>-5</sup></small></span><span>1.0000</span></div></div>
+      <dl class="stats" data-hstats>
+        <div><dt>points</dt><dd>13</dd></div>
+        <div><dt>mean error</dt><dd>1.39 px</dd></div>
+        <div><dt>max error</dt><dd>2.24 px</dd></div>
+      </dl>
+      <p class="small">Reprojection error: map each point through H and measure how far it lands from its partner. It is never exactly zero, because the system is overdetermined and the points carry my placement error and a little parallax. Pick a pair above to see its own matrix.</p>
+    </div>
+  </div>
+
+  <details class="all-h" open>
+    <summary class="mono">All six recovered homographies (side frame &rarr; middle frame)</summary>
+    <div class="all-h__grid">
+      <figure><figcaption class="mono">I &middot; mosaic_1a.jpg &rarr; mosaic_1b.jpg &middot; n=10 &middot; mean 1.04 px</figcaption><div class="matrix " role="img" aria-label="3 by 3 homography matrix"><span>1.9540</span><span>&minus;0.1371</span><span>&minus;2347.09</span><span>0.3952</span><span>1.8923</span><span>&minus;975.76</span><span>4.468<small>&times;10<sup>-4</sup></small></span><span>7.846<small>&times;10<sup>-5</sup></small></span><span>1.0000</span></div></figure>
+      <figure><figcaption class="mono">I &middot; mosaic_1c.jpg &rarr; mosaic_1b.jpg &middot; n=8 &middot; mean 0.54 px</figcaption><div class="matrix " role="img" aria-label="3 by 3 homography matrix"><span>0.4385</span><span>0.0401</span><span>1274.52</span><span>&minus;0.2497</span><span>0.9302</span><span>90.6488</span><span>&minus;3.063<small>&times;10<sup>-4</sup></small></span><span>2.471<small>&times;10<sup>-6</sup></small></span><span>1.0000</span></div></figure>
+      <figure><figcaption class="mono">II &middot; mosaic_2a.jpg &rarr; mosaic_2b.jpg &middot; n=13 &middot; mean 1.39 px</figcaption><div class="matrix " role="img" aria-label="3 by 3 homography matrix"><span>2.4756</span><span>&minus;0.1842</span><span>&minus;1802.49</span><span>0.6930</span><span>1.9308</span><span>&minus;798.80</span><span>8.538<small>&times;10<sup>-4</sup></small></span><span>&minus;8.169<small>&times;10<sup>-5</sup></small></span><span>1.0000</span></div></figure>
+      <figure><figcaption class="mono">II &middot; mosaic_2c.jpg &rarr; mosaic_2b.jpg &middot; n=14 &middot; mean 1.86 px</figcaption><div class="matrix " role="img" aria-label="3 by 3 homography matrix"><span>0.4047</span><span>0.0722</span><span>690.29</span><span>&minus;0.2810</span><span>0.8015</span><span>147.63</span><span>&minus;3.232<small>&times;10<sup>-4</sup></small></span><span>&minus;2.610<small>&times;10<sup>-6</sup></small></span><span>1.0000</span></div></figure>
+      <figure><figcaption class="mono">III &middot; mosaic_3a.jpg &rarr; mosaic_3b.jpg &middot; n=10 &middot; mean 2.59 px</figcaption><div class="matrix " role="img" aria-label="3 by 3 homography matrix"><span>3.0675</span><span>0.1741</span><span>&minus;2672.68</span><span>0.6401</span><span>2.5492</span><span>&minus;798.95</span><span>1.129<small>&times;10<sup>-3</sup></small></span><span>1.221<small>&times;10<sup>-4</sup></small></span><span>1.0000</span></div></figure>
+      <figure><figcaption class="mono">III &middot; mosaic_3c.jpg &rarr; mosaic_3b.jpg &middot; n=7 &middot; mean 1.12 px</figcaption><div class="matrix " role="img" aria-label="3 by 3 homography matrix"><span>0.3730</span><span>7.364<small>&times;10<sup>-3</sup></small></span><span>935.17</span><span>&minus;0.2092</span><span>0.8908</span><span>17.5688</span><span>&minus;3.572<small>&times;10<sup>-4</sup></small></span><span>5.117<small>&times;10<sup>-5</sup></small></span><span>1.0000</span></div></figure>
+    </div>
+  </details>
+
+  <div class="pinned-note">
+    <p class="hand">the pillar problem</p>
+    <p>For the right caf&eacute; pair I started with ten points. Three of them, on the concrete pillar and a hanging lamp, disagreed with the rest by 20 to 40 pixels whichever subset I fit. Those objects are much closer to the camera than the back wall, so they shift differently when the phone moves, and no single homography can satisfy both depths. I kept the seven points on the back wall and the menu screens. The wall lines up, and the pillar ghosts a little instead of everything being slightly off.</p>
+  </div>
+</section>
+
+<!-- ===================================================== 03 · PERSPECTIVE -->
+<section id="perspective" class="sheet sheet--charcoal" aria-labelledby="h-persp">
+  <header class="sec-head">
+    <p class="sec-num">03 <span>/ A.3 Warp the images</span></p>
+    <h2 id="h-persp">Shifting <i>perspective</i></h2>
+    <p class="sec-lede">A photo rarely sees a flat thing straight on. If I know four corners of something that is really a rectangle, one homography turns it back to face me.</p>
+  </header>
+
+  <div class="prose prose--two">
+    <p>I picked the four corners of a book cover and of a printed menu (top-left, top-right, bottom-right, bottom-left of the real object) and mapped them to the corners of an upright rectangle. With exactly four points, <code>computeH</code> gets a square 8&nbsp;&times;&nbsp;8 system and the corners land exactly where I asked.</p>
+    <p>I did not want to guess the rectangle's proportions, so I estimated them from the photo. The EXIF data says 24&nbsp;mm equivalent, about 1248&nbsp;px at the working size. Shooting a ray from the camera through each corner and requiring the four 3D points to form a parallelogram fixes the true side lengths up to scale. That gives width/height 0.659 for the book and 0.775 for the menu. The menu looks like a US-letter sheet, which would be 8.5/11&nbsp;=&nbsp;0.773, and the recovered corner angles are 89.3&deg; and 90.1&deg;, so I trust the estimates.</p>
+  </div>
+
+  <div class="rectify" data-rect="0">
+    <div class="rectify__head">
+      <p class="mono">Rectification 1 &middot; recti_book_1.jpg &middot; output 590 &times; 895 px</p>
+      <h3>The book</h3>
+    </div>
+    <div class="rectify__stage">
+      <figure class="frame-tilted">
+        <div class="frame-tilted__inner" style="--ar: 0.7500">
+          <img src="assets/img/rectification1_source.jpg" alt="Original photo: a library copy of Red Rising lying at an angle on a cat-print desk mat next to a tea cup." loading="lazy">
+          <svg class="quad" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true" data-quad="0"></svg>
+        </div>
+        <figcaption class="mono">original, corners TL &rarr; TR &rarr; BR &rarr; BL</figcaption>
+      </figure>
+      <div class="viewer" style="--ar: 0.6592">
+        <input type="radio" name="v1" id="v1-o" class="viewer__radio"><input type="radio" name="v1" id="v1-n" class="viewer__radio"><input type="radio" name="v1" id="v1-b" class="viewer__radio" checked>
+        <div class="viewer__seg" role="group" aria-label="Choose what the right panel shows">
+          <label for="v1-o">Context</label><label for="v1-n">Nearest</label><label for="v1-b">Bilinear</label>
+        </div>
+        <div class="viewer__frame">
+          <img class="viewer__layer viewer__layer--o" src="assets/img/rectification1_context.webp" alt="The same homography applied to a wider area: the desk mat and table around the book are pulled into the flattened view." loading="lazy">
+          <img class="viewer__layer viewer__layer--n" src="assets/img/rectification1_nearest.webp" alt="Rectified book cover, nearest-neighbor sampling." loading="lazy">
+          <img class="viewer__layer viewer__layer--b" src="assets/img/rectification1_bilinear.webp" alt="Rectified book cover, bilinear sampling." loading="lazy">
+        </div>
+      </div>
+    </div>
+    <div class="loupe">
+      <figure><img src="assets/img/rectification1_zoom_nearest.webp" alt="Close-up of the nearest-neighbor result: stair-stepped edges on the lettering." loading="lazy"><figcaption class="mono">nearest &middot; 32 ms</figcaption></figure>
+      <figure><img src="assets/img/rectification1_zoom_bilinear.webp" alt="Same close-up with bilinear sampling: smooth, slightly softer edges." loading="lazy"><figcaption class="mono">bilinear &middot; 77 ms</figcaption></figure>
+      <div class="loupe__note">
+        <p class="mono">close-up, 5&times; pixel replication</p>
+        <p>Same crop of both outputs, with each output pixel drawn as a 5&times;5 block. Nearest neighbor copies whichever source pixel is closest, so the letter edges turn into little stairs. Bilinear blends the four surrounding pixels, so edges stay smooth but get a bit softer.</p>
+        <details class="hmini"><summary class="mono">H (photo &rarr; rectangle)</summary><div class="matrix " role="img" aria-label="3 by 3 homography matrix"><span>1.2913</span><span>&minus;0.1257</span><span>&minus;804.28</span><span>&minus;0.2130</span><span>1.5160</span><span>&minus;818.54</span><span>&minus;3.339<small>&times;10<sup>-4</sup></small></span><span>4.899<small>&times;10<sup>-4</sup></small></span><span>1.0000</span></div></details>
+      </div>
+    </div>
+    <figure class="static-figs static-figs--one"><img src="assets/img/rectification1_comparison.jpg" alt="Static figure: original with corners, nearest-neighbor result, bilinear result." loading="lazy"><figcaption>Original with corners, nearest neighbor, bilinear.</figcaption></figure>
+  </div>
+
+  <div class="rectify rectify--flip" data-rect="1">
+    <div class="rectify__head">
+      <p class="mono">Rectification 2 &middot; recti menu 2.jpg &middot; output 729 &times; 940 px</p>
+      <h3>The menu</h3>
+    </div>
+    <div class="rectify__stage">
+      <figure class="frame-tilted frame-tilted--r">
+        <div class="frame-tilted__inner" style="--ar: 0.7500">
+          <img src="assets/img/rectification2_source.jpg" alt="Original photo: a Lishan Mocktail menu in a wooden stand, photographed from slightly above and to the left." loading="lazy">
+          <svg class="quad" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true" data-quad="1"></svg>
+        </div>
+        <figcaption class="mono">original, corners TL &rarr; TR &rarr; BR &rarr; BL</figcaption>
+      </figure>
+      <div class="viewer" style="--ar: 0.7755">
+        <input type="radio" name="v2" id="v2-o" class="viewer__radio"><input type="radio" name="v2" id="v2-n" class="viewer__radio"><input type="radio" name="v2" id="v2-b" class="viewer__radio" checked>
+        <div class="viewer__seg" role="group" aria-label="Choose what the right panel shows">
+          <label for="v2-o">Context</label><label for="v2-n">Nearest</label><label for="v2-b">Bilinear</label>
+        </div>
+        <div class="viewer__frame">
+          <img class="viewer__layer viewer__layer--o" src="assets/img/rectification2_context.webp" alt="The same homography applied to a wider area around the menu, including the second menu stand and the counter." loading="lazy">
+          <img class="viewer__layer viewer__layer--n" src="assets/img/rectification2_nearest.webp" alt="Rectified menu, nearest-neighbor sampling." loading="lazy">
+          <img class="viewer__layer viewer__layer--b" src="assets/img/rectification2_bilinear.webp" alt="Rectified menu, bilinear sampling." loading="lazy">
+        </div>
+      </div>
+    </div>
+    <div class="loupe">
+      <figure><img src="assets/img/rectification2_zoom_nearest.webp" alt="Close-up of the nearest-neighbor menu: jagged edges on the QR code and text." loading="lazy"><figcaption class="mono">nearest &middot; 40 ms</figcaption></figure>
+      <figure><img src="assets/img/rectification2_zoom_bilinear.webp" alt="Same close-up with bilinear sampling." loading="lazy"><figcaption class="mono">bilinear &middot; 117 ms</figcaption></figure>
+      <div class="loupe__note">
+        <p class="mono">close-up, 5&times; pixel replication</p>
+        <p>The crop is picked automatically where the warp stretches the photo the most and there is detail to look at; here each source pixel covers 1.07 to 1.11 output pixels across. Fine high-contrast patterns like the QR code show the difference best.</p>
+        <details class="hmini"><summary class="mono">H (photo &rarr; rectangle)</summary><div class="matrix " role="img" aria-label="3 by 3 homography matrix"><span>0.8391</span><span>&minus;0.0210</span><span>&minus;136.19</span><span>&minus;0.0410</span><span>0.8267</span><span>&minus;383.73</span><span>&minus;4.828<small>&times;10<sup>-5</sup></small></span><span>&minus;1.162<small>&times;10<sup>-4</sup></small></span><span>1.0000</span></div></details>
+      </div>
+    </div>
+    <figure class="static-figs static-figs--one"><img src="assets/img/rectification2_comparison.jpg" alt="Static figure: original menu with corners, nearest-neighbor result, bilinear result." loading="lazy"><figcaption>Original with corners, nearest neighbor, bilinear.</figcaption></figure>
+  </div>
+
+  <div class="prose prose--two prose--notes">
+    <div>
+      <h3 class="small-head">Why inverse warping</h3>
+      <p>Both warps work backwards. For every pixel of the output I apply H<sup>&minus;1</sup> to find where it came from in the source photo and sample there. Pushing source pixels forward through H instead would leave holes wherever the warp stretches the image, and pile several pixels onto one where it shrinks. Going backwards, every output pixel gets exactly one value. Output pixels whose source location falls outside the photo are marked invalid in a mask rather than painted black.</p>
+      <p>The source location is almost never a whole pixel. <code>warpImageNearestNeighbor</code> rounds it to the closest pixel center. <code>warpImageBilinear</code> takes the four pixels around it and weights them by (1&minus;dx)(1&minus;dy), dx(1&minus;dy), (1&minus;dx)dy and dx&nbsp;dy, where dx and dy are the fractional offsets. Both are written with NumPy indexing and arithmetic only.</p>
+    </div>
+    <div>
+      <h3 class="small-head">Quality and speed</h3>
+      <p>At normal viewing size the two results look almost identical, because these rectifications only enlarge the photo slightly. The difference shows up on edges once you zoom in: nearest neighbor gives jagged, blocky diagonals and bilinear gives smooth ones.</p>
+      <p>Bilinear is slower because it reads four pixels and does several multiplies per output pixel instead of one lookup. Median of three runs on my machine: <b>32 ms vs 77 ms</b> for the book and <b>40 ms vs 117 ms</b> for the menu, so bilinear costs about 2.4&times; to 2.9&times; more. Both are fast enough not to matter here, so I used bilinear for everything else, including the mosaics.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== 04 · STITCHING -->
+<section id="stitching" class="sheet sheet--night sheet--stage" aria-labelledby="h-stitch">
+  <header class="sec-head sec-head--center">
+    <p class="sec-num">04 <span>/ A.4 Blend into mosaics</span></p>
+    <h2 id="h-stitch">Stitching the world <i>back together</i></h2>
+    <p class="sec-lede">Each mosaic lives in its middle frame's coordinates. The side frames are warped into that frame by chaining their homographies, and everything is blended on one shared canvas.</p>
+  </header>
+
+  <div class="prose prose--narrow">
+    <p>To size the canvas, I push the four corners of every frame through its homography, take the bounding box, and offset the output so its top-left pixel sits at that box's minimum (usually negative) corner. Each frame is then inverse-warped onto the full canvas with bilinear sampling and its own validity mask. Before blending I scale each side frame so its median color in the overlap matches the middle frame, then feather all three together (details in section 05). The bow-tie shape is real: a flat projection stretches anything far from the middle frame's viewing direction, so the outer corners fan out.</p>
+  </div>
+
+  <!-- PLATE I -->
+  <article class="plate-ex" id="plate-1" data-mosaic="0">
+    <header class="plate-ex__head">
+      <p class="plate-ex__no">I</p>
+      <div>
+        <h3>Last Light Over the Bay</h3>
+        <p class="mono">3 frames &middot; canvas 7,031 &times; 2,959 px &middot; reference mosaic_1b.jpg</p>
+      </div>
+    </header>
+    <div class="pano" data-pano>
+      <div class="pano__track" style="--ar: 2.3761" tabindex="0" aria-label="Panorama: Last Light Over the Bay. Use arrow keys to scroll when in walk-through mode.">
+        <img src="assets/img/mosaic1_feathered_2400.webp" data-full="assets/img/mosaic1_feathered_full.webp" alt="Finished feathered mosaic of the sunset over the bay: the sun and the San Francisco skyline in the middle, contrails across the sky, an apartment building on the right and grass in the lower left." loading="lazy">
+      </div>
+      <div class="pano__bar">
+        <button type="button" class="btn" data-pano-walk aria-pressed="false">Walk through it</button>
+        <button type="button" class="btn btn--ghost" data-pano-full>Full resolution</button>
+        <span class="mono pano__hint">drag or scroll sideways in walk-through mode</span>
+      </div>
+    </div>
+    <div class="plate-ex__body">
+      <div class="plate-ex__text">
+        <p>This is the hero image at the top of the page. Frame 02 is the reference, with frames 01 and 03 warped into it. It has the least overlap of the three sets (about a quarter of each side frame), so the landmarks are mostly packed along the skyline: rooftop corners, the top of a tall building, a Golden Gate tower. Even so, the mean errors came out at 1.04 and 0.54&nbsp;px, and the skyline lines up at both seams.</p>
+        <p>The real problem was exposure. Frame 01 was taken at 1/4184&nbsp;s and ISO 80 while frame 02 was 1/10870&nbsp;s and ISO 64, so frame 01 came out much brighter. Feathering alone just smeared that jump into a wide bright band across the sky. The overlap-based gain for frame 01 came out around 0.26 / 0.29 / 0.31 (R/G/B in linear light), close to what the exposure settings predict, and with it applied the sky reads as one continuous gradient.</p>
+      </div>
+      <div class="compare-wrap">
+        <div class="compare" data-compare style="--pos: 50%; --ar: 1.0099">
+          <img class="compare__a" src="assets/img/mosaic1_detail_hard.jpg" alt="Close-up at the left seam, hard-seam version." loading="lazy">
+          <div class="compare__b"><img src="assets/img/mosaic1_detail_feather.jpg" alt="Same close-up, feather-blended." loading="lazy"></div>
+          <input class="compare__range" type="range" min="0" max="100" value="50" aria-label="Move the divider between the hard-seam and feathered versions">
+          <div class="compare__handle" aria-hidden="true"><svg><use href="#aperture"/></svg></div>
+          <span class="compare__tag compare__tag--l mono">hard seam</span><span class="compare__tag compare__tag--r mono">feathered</span>
+        </div>
+        <p class="mono compare-cap">left seam, native resolution &middot; drag, swipe, or use arrow keys</p>
+      </div>
+    </div>
+    <div class="static-pair">
+      <figure><img src="assets/img/mosaic1_detail_hard.jpg" alt="Hard seam close-up." loading="lazy"><figcaption>Hard seam</figcaption></figure>
+      <figure><img src="assets/img/mosaic1_detail_feather.jpg" alt="Feathered close-up." loading="lazy"><figcaption>Feathered</figcaption></figure>
+    </div>
+  </article>
+
+  <!-- PLATE II -->
+  <article class="plate-ex plate-ex--flip" id="plate-2" data-mosaic="1">
+    <header class="plate-ex__head">
+      <p class="plate-ex__no">II</p>
+      <div>
+        <h3>Zoology & Botany</h3>
+        <p class="mono">3 frames &middot; canvas 5,959 &times; 2,887 px &middot; reference mosaic_2b.jpg</p>
+      </div>
+    </header>
+    <div class="pano" data-pano>
+      <div class="pano__track" style="--ar: 2.0641" tabindex="0" aria-label="Panorama: Zoology & Botany.">
+        <img src="assets/img/mosaic2_feathered_2400.webp" data-full="assets/img/mosaic2_feathered_full.webp" alt="Finished feathered mosaic of the Zoology and Botany building: the white facade and entrance steps in the middle, modern buildings and lawn on the left, trees and lawn on the right, under a blue sky with the sun behind the evergreen." loading="lazy">
+      </div>
+      <div class="pano__bar">
+        <button type="button" class="btn" data-pano-walk aria-pressed="false">Walk through it</button>
+        <button type="button" class="btn btn--ghost" data-pano-full>Full resolution</button>
+        <span class="mono pano__hint">drag or scroll sideways in walk-through mode</span>
+      </div>
+    </div>
+    <div class="plate-ex__body">
+      <div class="plate-ex__text">
+        <p>The cleanest of the three. The building is far enough away that small movements of the phone barely matter, and each side frame overlaps the middle one by more than half. With 13 and 14 points spread over the carved lettering, window corners and the winged disk above the door, the mean errors are 1.39 and 1.86&nbsp;px, and the facade lines up across both seams down to the column capitals.</p>
+        <p>The sun sits just behind the tree in the middle frame, so the phone exposed the three frames differently. The left frame came out darker (it needed a gain of about 1.43 / 1.43 / 1.47) and the right one slightly warmer (0.89 / 0.97 / 1.11). Matching gains per channel before blending fixed most of that. The far ends of the canvas are stretched hard, which is the price of covering this wide a view with a flat projection; I left the result uncropped so the geometry is visible.</p>
+      </div>
+      <div class="compare-wrap">
+        <div class="compare" data-compare style="--pos: 50%; --ar: 0.9382">
+          <img class="compare__a" src="assets/img/mosaic2_detail_hard.jpg" alt="Close-up at the left seam of the building, hard-seam version." loading="lazy">
+          <div class="compare__b"><img src="assets/img/mosaic2_detail_feather.jpg" alt="Same close-up, feather-blended." loading="lazy"></div>
+          <input class="compare__range" type="range" min="0" max="100" value="50" aria-label="Move the divider between the hard-seam and feathered versions">
+          <div class="compare__handle" aria-hidden="true"><svg><use href="#aperture"/></svg></div>
+          <span class="compare__tag compare__tag--l mono">hard seam</span><span class="compare__tag compare__tag--r mono">feathered</span>
+        </div>
+        <p class="mono compare-cap">left seam, native resolution</p>
+      </div>
+    </div>
+    <div class="static-pair">
+      <figure><img src="assets/img/mosaic2_detail_hard.jpg" alt="Hard seam close-up." loading="lazy"><figcaption>Hard seam</figcaption></figure>
+      <figure><img src="assets/img/mosaic2_detail_feather.jpg" alt="Feathered close-up." loading="lazy"><figcaption>Feathered</figcaption></figure>
+    </div>
+  </article>
+
+  <!-- PLATE III -->
+  <article class="plate-ex" id="plate-3" data-mosaic="2">
+    <header class="plate-ex__head">
+      <p class="plate-ex__no">III</p>
+      <div>
+        <h3>Halloween at the Tea Counter</h3>
+        <p class="mono">3 frames &middot; canvas 7,169 &times; 3,272 px &middot; reference mosaic_3b.jpg</p>
+      </div>
+    </header>
+    <div class="pano" data-pano>
+      <div class="pano__track" style="--ar: 2.1910" tabindex="0" aria-label="Panorama: Halloween at the Tea Counter.">
+        <img src="assets/img/mosaic3_feathered_2400.webp" data-full="assets/img/mosaic3_feathered_full.webp" alt="Finished feathered mosaic of the tea shop: windows and a wooden planter on the left, the counter with menu screens and a HAPPY HALLOWEEN banner in the middle, a concrete pillar and seated customers on the right." loading="lazy">
+      </div>
+      <div class="pano__bar">
+        <button type="button" class="btn" data-pano-walk aria-pressed="false">Walk through it</button>
+        <button type="button" class="btn btn--ghost" data-pano-full>Full resolution</button>
+        <span class="mono pano__hint">drag or scroll sideways in walk-through mode</span>
+      </div>
+    </div>
+    <div class="plate-ex__body">
+      <div class="plate-ex__text">
+        <p>The hardest set, and the one I learned the most from. Everything is within a few meters of the camera, so any shift of the phone between frames shows up as parallax. The back wall, menu screens and counter line up well (mean errors 2.59 and 1.12&nbsp;px), but the pillar and the people at the tables are much closer and do not.</p>
+        <p>In the feathered version you can see it: the MAX OCCUPANCY sign appears twice and the customer in the grey shirt is semi-transparent where both frames overlap. Part of that is parallax, and part is that people moved during the five seconds between frames 07 and 09. A homography cannot fix either. The two-band blend in section 05 hides most of the doubling without pretending the alignment is better than it is.</p>
+      </div>
+      <div class="compare-wrap">
+        <div class="compare" data-compare style="--pos: 50%; --ar: 0.9738">
+          <img class="compare__a" src="assets/img/mosaic3_detail_hard.jpg" alt="Close-up at the right seam of the cafe: hard-seam version with a visible vertical edge through the pillar." loading="lazy">
+          <div class="compare__b"><img src="assets/img/mosaic3_detail_feather.jpg" alt="Same close-up, feather-blended, with a doubled occupancy sign and ghosted customer." loading="lazy"></div>
+          <input class="compare__range" type="range" min="0" max="100" value="50" aria-label="Move the divider between the hard-seam and feathered versions">
+          <div class="compare__handle" aria-hidden="true"><svg><use href="#aperture"/></svg></div>
+          <span class="compare__tag compare__tag--l mono">hard seam</span><span class="compare__tag compare__tag--r mono">feathered</span>
+        </div>
+        <p class="mono compare-cap">right seam, native resolution</p>
+      </div>
+    </div>
+    <div class="static-pair">
+      <figure><img src="assets/img/mosaic3_detail_hard.jpg" alt="Hard seam close-up." loading="lazy"><figcaption>Hard seam</figcaption></figure>
+      <figure><img src="assets/img/mosaic3_detail_feather.jpg" alt="Feathered close-up." loading="lazy"><figcaption>Feathered</figcaption></figure>
+    </div>
+  </article>
+  <p class="live-only live-only--center">On the live site each close-up is a draggable before/after slider, and each panorama can be scrolled through or opened at full resolution.</p>
+</section>
+
+<!-- ===================================================== 05 · SEAMS -->
+<section id="seams" class="sheet sheet--plum" aria-labelledby="h-seams">
+  <header class="sec-head sec-head--split">
+    <p class="sec-num">05 <span>/ A.4 Blending, plus bells &amp; whistles</span></p>
+    <h2 id="h-seams">The <i>invisible</i> seams</h2>
+    <p class="sec-lede">A mask decides what each frame is allowed to show. Blending decides how much.</p>
+  </header>
+
+  <div class="seams-grid">
+    <div class="prose">
+      <p>Once all three frames are on the same canvas, something has to decide what happens where they overlap. Pasting one on top of the other (the hard-seam versions above) leaves a visible edge wherever brightness or alignment differs even slightly.</p>
+      <p>Instead, each frame gets a weight that is 1 at its center and falls off linearly to 0 at its border. I compute it as the distance to the nearest edge of the original photo, measured in that photo's own pixels, so it warps along with the frame. The output pixel is then the weighted average of every frame that covers it:</p>
+      <div class="eq eq--big">
+        <span><var>I</var>(<var>p</var>) =</span>
+        <span class="frac"><span>&Sigma;<sub><var>i</var></sub> <var>m</var><sub><var>i</var></sub>(<var>p</var>) <var>w</var><sub><var>i</var></sub>(<var>p</var>) <var>I</var><sub><var>i</var></sub>(<var>p</var>)</span><span>&Sigma;<sub><var>i</var></sub> <var>m</var><sub><var>i</var></sub>(<var>p</var>) <var>w</var><sub><var>i</var></sub>(<var>p</var>)</span></span>
+      </div>
+      <p><var>m</var><sub><var>i</var></sub> is the validity mask from the inverse warp: 1 if the pixel really came from inside photo <var>i</var>, 0 if it fell off the edge. That is what keeps empty canvas from being averaged in, and it is why a genuinely dark pixel (the black menu screens, the shadowed rooftops) still counts as data.</p>
+    </div>
+
+    <figure class="lens" data-lens tabindex="0" aria-label="Mask lens over plate II. Move the pointer, or use arrow keys, to reveal each frame's blending weight." style="--ar: 2.0641">
+      <img class="lens__base" src="assets/img/mosaic2_feathered_2400.webp" alt="Feathered mosaic of the Zoology and Botany building." loading="lazy">
+      <img class="lens__reveal" src="assets/img/mosaic2_weights.jpg" alt="Blending weights: red where the left frame dominates, gold for the middle frame, blue for the right, with smooth color ramps in the overlaps." loading="lazy">
+      <figcaption class="mono">move the mask over the photo &middot; <span class="sw sw--r"></span>frame 04 <span class="sw sw--g"></span>frame 05 <span class="sw sw--b"></span>frame 06</figcaption>
+    </figure>
+  </div>
+
+  <div class="shares">
+    <p class="mono shares__label">each frame's share of plate II, after normalizing the weights</p>
+    <figure class="cutout"><img src="assets/img/mosaic2_share1.webp" alt="Frame 04 warped onto the canvas, fading out toward the middle frame." loading="lazy"><figcaption class="mono">frame 04 &middot; left</figcaption></figure>
+    <figure class="cutout"><img src="assets/img/mosaic2_share2.webp" alt="Frame 05, fully opaque in the middle and fading out on both sides." loading="lazy"><figcaption class="mono">frame 05 &middot; reference</figcaption></figure>
+    <figure class="cutout"><img src="assets/img/mosaic2_share3.webp" alt="Frame 06 warped onto the canvas, fading out toward the middle." loading="lazy"><figcaption class="mono">frame 06 &middot; right</figcaption></figure>
+  </div>
+
+  <div class="static-pair static-pair--3">
+    <figure><img src="assets/img/mosaic2_weights_print.jpg" alt="Static weight map for plate II." loading="lazy"><figcaption>Normalized weights (red: frame 04, gold: frame 05, blue: frame 06)</figcaption></figure>
+  </div>
+
+  <div class="bells">
+    <header>
+      <p class="mono">bells &amp; whistles</p>
+      <h3>Two extras that actually helped</h3>
+    </header>
+    <div class="bells__grid">
+      <div class="prose">
+        <h4 class="small-head">1. Exposure matching</h4>
+        <p>Before blending, each side frame gets one gain per color channel so that its median color in the overlap matches the middle frame. I do the matching in roughly linear light (raising values to the 2.2 power first) so the gain behaves like a change in exposure rather than a contrast change. The gains it found:</p>
+        <table class="gains">
+          <thead><tr><th>plate</th><th>left frame</th><th>right frame</th></tr></thead>
+          <tbody>
+            <tr><td>I</td><td>0.26 / 0.29 / 0.31</td><td>0.91 / 0.95 / 1.00</td></tr>
+            <tr><td>II</td><td>1.43 / 1.43 / 1.47</td><td>0.89 / 0.97 / 1.11</td></tr>
+            <tr><td>III</td><td>1.31 / 1.46 / 1.80</td><td>0.80 / 0.80 / 0.74</td></tr>
+          </tbody>
+        </table>
+        <p class="small">R / G / B. The reference frame always keeps a gain of 1. This is global, so vignetting inside a single frame is still there.</p>
+        <h4 class="small-head">2. Two-band blending</h4>
+        <p>Feathering averages everything, including fine detail, so any misalignment turns into a double image. The two-band version splits each warped frame into a low-pass part (Gaussian, &sigma;&nbsp;=&nbsp;8&nbsp;px, built from repeated box filters with cumulative sums) and the high-frequency remainder. Low frequencies are blended with the feather weights so color still transitions smoothly; high frequencies are taken only from whichever frame has the most weight at that pixel. Sharp edges come from one photo, so they cannot double.</p>
+        <p>It does not fix the alignment. The pillar's left edge still jumps at the seam, because the two frames really disagree about where it is. It just stops the disagreement from showing up as a ghost.</p>
+      </div>
+      <div class="compare-wrap compare-wrap--tall">
+        <div class="compare" data-compare style="--pos: 50%; --ar: 0.9738">
+          <img class="compare__a" src="assets/img/mosaic3_detail_feather.jpg" alt="Cafe close-up, feathered: doubled sign and ghosted customer." loading="lazy">
+          <div class="compare__b"><img src="assets/img/mosaic3_detail_twoband.jpg" alt="Same close-up, two-band blend: single sign and solid customer." loading="lazy"></div>
+          <input class="compare__range" type="range" min="0" max="100" value="50" aria-label="Move the divider between the feathered and two-band versions">
+          <div class="compare__handle" aria-hidden="true"><svg><use href="#aperture"/></svg></div>
+          <span class="compare__tag compare__tag--l mono">feathered</span><span class="compare__tag compare__tag--r mono">two-band</span>
+        </div>
+        <p class="mono compare-cap">plate III, right seam</p>
+        <div class="static-pair">
+          <figure><img src="assets/img/mosaic3_detail_feather.jpg" alt="Feathered close-up." loading="lazy"><figcaption>Feathered</figcaption></figure>
+          <figure><img src="assets/img/mosaic3_detail_twoband.jpg" alt="Two-band close-up." loading="lazy"><figcaption>Two-band</figcaption></figure>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== 06 · BEHIND -->
+<section id="behind" class="sheet sheet--paper sheet--letter" aria-labelledby="h-behind">
+  <div class="sheet__edge sheet__edge--top" aria-hidden="true"></div>
+  <div class="letter">
+    <p class="sec-num">06 <span>/ reflection</span></p>
+    <h2 id="h-behind">Behind the <i>frame</i></h2>
+    <div class="letter__body">
+      <p>The biggest surprise was how much the result depended on the points rather than the code. Once <code>computeH</code> and the warps passed their tests, every visible problem in a mosaic traced back to a correspondence: a point on the wrong corner, or a point on something at a different depth from the rest. The per-point residuals were the most useful debugging tool I had. They flagged the pillar points in the caf&eacute; before I had looked at a single mosaic.</p>
+      <p>Inverse warping makes sense once you think from the output's side. Every output pixel needs a value, so ask where it came from. The masks follow from the same idea. Without them a black pixel and an empty one look identical, and feathering would average real image with blank canvas near every border.</p>
+      <p>Nearest neighbor versus bilinear was less dramatic than I expected at normal size, because none of these warps enlarge the photo much. Zoomed in, the stair-steps are obvious, and bilinear costs about two and a half times as much. That is an easy trade for anything meant to be looked at.</p>
+      <p>Feathering fixed the seams wherever the alignment was good (plate II is basically seamless) and made things worse in one specific way where it was not, by turning misalignment into ghosts. Exposure matching mattered more than I expected for the sunset. The limits are still visible: the stretched ends of plates I and II would look better with a cylindrical projection, which I did not implement, and the caf&eacute; really needed the phone to pivot more carefully about the lens.</p>
+    </div>
+    <p class="hand letter__sign">more beyond the frame, always.</p>
+    <svg class="sticker sticker--apple sticker--letter" aria-hidden="true"><use href="#apple"/></svg>
+  </div>
+  <div class="sheet__edge sheet__edge--bottom" aria-hidden="true"></div>
+</section>
+
+<!-- ===================================================== 07 · GALLERY -->
+<section id="gallery" class="gallery" aria-labelledby="h-gallery">
+  <header class="sec-head sec-head--center">
+    <p class="sec-num">07 <span>/ contact sheet</span></p>
+    <h2 id="h-gallery">Gallery</h2>
+  </header>
+  <div class="filmstrip">
+    <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="assets/img/mosaic1_feathered_full.webp" aria-label="Open Last Light Over the Bay at full resolution"><img src="assets/img/mosaic1_feathered_2400.webp" alt="Last Light Over the Bay, final mosaic." loading="lazy"></button><figcaption class="mono"><b>I</b> Last Light Over the Bay</figcaption></figure>
+    <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="assets/img/mosaic2_feathered_full.webp" aria-label="Open Zoology & Botany at full resolution"><img src="assets/img/mosaic2_feathered_2400.webp" alt="Zoology & Botany, final mosaic." loading="lazy"></button><figcaption class="mono"><b>II</b> Zoology & Botany</figcaption></figure>
+    <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="assets/img/mosaic3_feathered_full.webp" aria-label="Open Halloween at the Tea Counter at full resolution"><img src="assets/img/mosaic3_feathered_2400.webp" alt="Halloween at the Tea Counter, final mosaic (feathered)." loading="lazy"></button><figcaption class="mono"><b>III</b> Halloween at the Tea Counter</figcaption></figure>
+  </div>
+  <p class="closing">There's always more beyond the frame.</p>
+  <svg class="closing__mask" aria-hidden="true"><use href="#mask"/></svg>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer__row">
+    <p class="footer__title">Mosaic <i>of</i> Memories</p>
+    <p class="mono">CS180 / 280A &middot; Project 4A &middot; Part A</p>
+    <p><a href="https://sane24.github.io/mosaic-of-memories/">https://sane24.github.io/mosaic-of-memories/</a></p>
+  </div>
+  <p class="footer__small">All photographs are my own, taken on October 27, 2026. Every image on this page is an output of my Project 4A code or one of its input photos. Typefaces: Cormorant Garamond, Manrope, IBM Plex Mono and Caveat (SIL Open Font License, via Google Fonts). Textures, icons and the skyline are drawn in CSS and SVG for this page.</p>
+  <svg class="footer__apple" aria-hidden="true"><use href="#apple"/></svg>
+</footer>
+
+<dialog class="lightbox" data-lightbox aria-label="Full-resolution image">
+  <div class="lightbox__scroll" data-lightbox-scroll><img alt="" data-lightbox-img></div>
+  <button type="button" class="lightbox__close" data-lightbox-close>Close</button>
+  <p class="mono lightbox__hint">drag to pan &middot; esc to close</p>
+</dialog>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
