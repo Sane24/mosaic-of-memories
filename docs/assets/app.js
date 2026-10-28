@@ -21,7 +21,11 @@
       const a = links.get(e.target.id);
       if (a) {
         a.classList.add('is-active');
-        a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        // only scroll the nav strip sideways; scrollIntoView on a sticky bar moves the page
+        const nav = a.parentElement;
+        if (nav.scrollWidth > nav.clientWidth) {
+          nav.scrollTo({ left: a.offsetLeft - nav.clientWidth / 2 + a.offsetWidth / 2, behavior: 'smooth' });
+        }
       }
     }
   }, { rootMargin: '-45% 0px -50% 0px' });
