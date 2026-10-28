@@ -62,17 +62,44 @@
 <!-- ===================================================== 00 · OPENING -->
 <section class="hero" aria-labelledby="title">
   <div class="hero__sky" aria-hidden="true"></div>
-  <div class="hero__meta">
-    <span>CS180 / 280A</span><span>Project 04A</span><span>Image Warping &amp; Mosaicing</span><span>Fall 2026</span>
-  </div>
-  <p class="print-url">Website: <a href="{{site_url}}">{{site_url}}</a></p>
+  <div class="hero__top">
+    <div class="hero__left">
+      <div class="hero__meta">
+        <span>CS180 / 280A</span><span>Project 04A</span><span>Image Warping &amp; Mosaicing</span>
+      </div>
+      <p class="print-url">Website: <a href="{{site_url}}">{{site_url}}</a></p>
+      <h1 id="title" class="hero__title">
+        <span class="w1">Mosaic</span>
+        <span class="w2"><i>of</i></span>
+        <span class="w3">Memories</span>
+      </h1>
+      <p class="hero__sub">Fragments of a world, stitched into something whole.</p>
+    </div>
 
-  <h1 id="title" class="hero__title">
-    <span class="w1">Mosaic</span>
-    <span class="w2"><i>of</i></span>
-    <span class="w3">Memories</span>
-  </h1>
-  <p class="hero__sub">Fragments of a world, stitched into something whole.</p>
+    <aside class="readout" aria-label="Camera settings of the middle sunset frame">
+      <svg class="readout__dial" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r="56" class="ring"/>
+        <circle cx="60" cy="60" r="44" class="ring ring--in"/>
+        <g class="ticks" stroke="currentColor" stroke-width=".8" opacity=".6"><line x1="60.0" y1="10.0" x2="60.0" y2="17.0"/><line x1="66.5" y1="10.4" x2="66.0" y2="14.4"/><line x1="72.9" y1="11.7" x2="71.9" y2="15.6"/><line x1="79.1" y1="13.8" x2="76.5" y2="20.3"/><line x1="85.0" y1="16.7" x2="83.0" y2="20.2"/><line x1="90.4" y1="20.3" x2="88.0" y2="23.5"/><line x1="95.4" y1="24.6" x2="90.4" y2="29.6"/><line x1="99.7" y1="29.6" x2="96.5" y2="32.0"/><line x1="103.3" y1="35.0" x2="99.8" y2="37.0"/><line x1="106.2" y1="40.9" x2="99.7" y2="43.5"/><line x1="108.3" y1="47.1" x2="104.4" y2="48.1"/><line x1="109.6" y1="53.5" x2="105.6" y2="54.0"/><line x1="110.0" y1="60.0" x2="103.0" y2="60.0"/><line x1="109.6" y1="66.5" x2="105.6" y2="66.0"/><line x1="108.3" y1="72.9" x2="104.4" y2="71.9"/><line x1="106.2" y1="79.1" x2="99.7" y2="76.5"/><line x1="103.3" y1="85.0" x2="99.8" y2="83.0"/><line x1="99.7" y1="90.4" x2="96.5" y2="88.0"/><line x1="95.4" y1="95.4" x2="90.4" y2="90.4"/><line x1="90.4" y1="99.7" x2="88.0" y2="96.5"/><line x1="85.0" y1="103.3" x2="83.0" y2="99.8"/><line x1="79.1" y1="106.2" x2="76.5" y2="99.7"/><line x1="72.9" y1="108.3" x2="71.9" y2="104.4"/><line x1="66.5" y1="109.6" x2="66.0" y2="105.6"/><line x1="60.0" y1="110.0" x2="60.0" y2="103.0"/><line x1="53.5" y1="109.6" x2="54.0" y2="105.6"/><line x1="47.1" y1="108.3" x2="48.1" y2="104.4"/><line x1="40.9" y1="106.2" x2="43.5" y2="99.7"/><line x1="35.0" y1="103.3" x2="37.0" y2="99.8"/><line x1="29.6" y1="99.7" x2="32.0" y2="96.5"/><line x1="24.6" y1="95.4" x2="29.6" y2="90.4"/><line x1="20.3" y1="90.4" x2="23.5" y2="88.0"/><line x1="16.7" y1="85.0" x2="20.2" y2="83.0"/><line x1="13.8" y1="79.1" x2="20.3" y2="76.5"/><line x1="11.7" y1="72.9" x2="15.6" y2="71.9"/><line x1="10.4" y1="66.5" x2="14.4" y2="66.0"/><line x1="10.0" y1="60.0" x2="17.0" y2="60.0"/><line x1="10.4" y1="53.5" x2="14.4" y2="54.0"/><line x1="11.7" y1="47.1" x2="15.6" y2="48.1"/><line x1="13.8" y1="40.9" x2="20.3" y2="43.5"/><line x1="16.7" y1="35.0" x2="20.2" y2="37.0"/><line x1="20.3" y1="29.6" x2="23.5" y2="32.0"/><line x1="24.6" y1="24.6" x2="29.6" y2="29.6"/><line x1="29.6" y1="20.3" x2="32.0" y2="23.5"/><line x1="35.0" y1="16.7" x2="37.0" y2="20.2"/><line x1="40.9" y1="13.8" x2="43.5" y2="20.3"/><line x1="47.1" y1="11.7" x2="48.1" y2="15.6"/><line x1="53.5" y1="10.4" x2="54.0" y2="14.4"/></g>
+        <g class="stops" font-size="8.5">
+          <text x="60" y="13">1.8</text><text x="96" y="30">2.8</text><text x="109" y="64">4</text>
+          <text x="96" y="99">5.6</text><text x="60" y="114">8</text><text x="22" y="99">11</text>
+          <text x="10" y="64">16</text><text x="22" y="30">22</text>
+        </g>
+        <path d="M60 18 l-4 -6 h8z" class="index"/>
+        <g class="blades"><use href="#aperture" x="38" y="38" width="44" height="44"/></g>
+      </svg>
+      <div class="readout__lcd">
+        <p class="readout__row readout__row--top"><span>FR 02/03</span><span class="rec">&#9679; REF</span></p>
+        <p class="readout__main"><span><small>f/</small>{{m1.f2.fnum}}</span><span>{{m1.f2.shutter}}</span><span><small>ISO</small>{{m1.f2.iso}}</span></p>
+        <div class="readout__meter" aria-hidden="true">
+          <span>&minus;2</span><i></i><i></i><span>&minus;1</span><i></i><i></i><b>0</b><i></i><i></i><span>+1</span><i></i><i></i><span>+2</span>
+        </div>
+        <p class="readout__row"><span>{{m1.f2.f35}} mm eq</span><span>{{m1.f2.model}}</span></p>
+      </div>
+      <p class="readout__cap mono">exif, frame 02, plate I</p>
+    </aside>
+  </div>
 
   <figure class="hero__plate" style="--ar: {{m1.aspect}}">
     <div class="plate" data-parallax="0.6">
@@ -80,7 +107,8 @@
       <img class="plate__layer l3" src="{{m1.f3.warped}}" alt="" aria-hidden="true">
       <img class="plate__layer l2" src="{{m1.f2.warped}}" alt="" aria-hidden="true">
       <img class="plate__final" src="{{m1.src}}" alt="Three sunset photographs over the bay stitched into one wide panorama; the outer frames fan out into a bow-tie shape.">
-      <span class="datestamp" aria-hidden="true">'26 10 27 &nbsp;17:57</span><span class="vf vf--tl"></span><span class="vf vf--tr"></span><span class="vf vf--bl"></span><span class="vf vf--br"></span>
+      <span class="af af--1" aria-hidden="true"></span><span class="af af--2" aria-hidden="true"></span><span class="af af--3" aria-hidden="true"></span>
+      <span class="datestamp" aria-hidden="true">{{m1.f2.clock}}</span><span class="vf vf--tl"></span><span class="vf vf--tr"></span><span class="vf vf--bl"></span><span class="vf vf--br"></span>
     </div>
     <figcaption class="hero__cap">
       <span>Plate I</span><span>{{m1.title}}</span><span>3 frames</span><span>{{m1.size}} px</span><span>frames 01 to 03, warped and feathered</span>
@@ -88,7 +116,7 @@
   </figure>
 
   <div class="hero__intro">
-    <p>Nine photographs from one afternoon around Berkeley, a few dozen points I matched by hand, and a 3&times;3 matrix for every pair. This is my write-up for Part A of the image mosaicing project: recovering homographies, warping with my own nearest-neighbor and bilinear samplers, rectifying two photos, and blending three panoramas.</p>
+    <p>Nine photographs from one afternoon around Berkeley, a few dozen points I matched by hand, and a 3&times;3 matrix for every pair. This is my write-up for Part A of the image mosaicing project: recovering homographies, warping with my own nearest-neighbor and bilinear samplers, rectifying three views of flat objects, and blending three panoramas.</p>
     <svg class="sticker sticker--apple" aria-hidden="true"><use href="#apple"/></svg>
   </div>
 
@@ -108,7 +136,7 @@
   </header>
 
   <div class="capture-notes">
-    <p>Everything was shot on my iPhone 14 Pro on October 27, 2026. For each mosaic I took a middle frame and then turned left and right from the same spot, so each set is three frames taken within a few seconds of each other (the sunset set spans about a minute and a half). The campus and caf&eacute; sets use the main 24&nbsp;mm-equivalent lens. For the sunset I used the 2&times; setting (46 to 48&nbsp;mm equivalent), which makes the bay bigger in frame but leaves less overlap between shots.</p>
+    <p>Everything was shot on my iPhone 14 Pro in a single afternoon. For each mosaic I took a middle frame and then turned left and right from the same spot, so each set is three frames taken within a few seconds of each other (the sunset set spans about a minute and a half). The campus and caf&eacute; sets use the main 24&nbsp;mm-equivalent lens. For the sunset I used the 2&times; setting (46 to 48&nbsp;mm equivalent), which makes the bay bigger in frame but leaves less overlap between shots.</p>
     <p>A homography lines two photos up exactly only when the camera rotates about its own optical center or the scene is flat. A phone never pivots perfectly about its lens, so how well each set works depends mostly on how far away the subject is. The phone also picked its own exposure for every frame, which matters later: in the sunset set the shutter speed ranges from 1/10870&nbsp;s to 1/4184&nbsp;s.</p>
   </div>
 
@@ -264,6 +292,7 @@
   </div>
 </section>
 
+<div class="film-edge" aria-hidden="true"><span>&#9656; 12</span><span>MOM 400</span><span>&#9656; 13</span><span>12A</span><span>&#9656; 14</span><span>MOM 400</span><span>&#9656; 15</span><span>14A</span></div>
 <!-- ===================================================== 03 · PERSPECTIVE -->
 <section id="perspective" class="sheet sheet--charcoal" aria-labelledby="h-persp">
   <header class="sec-head">
@@ -273,8 +302,8 @@
   </header>
 
   <div class="prose prose--two">
-    <p>I picked the four corners of a book cover and of a printed menu (top-left, top-right, bottom-right, bottom-left of the real object) and mapped them to the corners of an upright rectangle. With exactly four points, <code>computeH</code> gets a square 8&nbsp;&times;&nbsp;8 system and the corners land exactly where I asked.</p>
-    <p>I did not want to guess the rectangle's proportions, so I estimated them from the photo. The EXIF data says 24&nbsp;mm equivalent, about {{r1.focal}}&nbsp;px at the working size. Shooting a ray from the camera through each corner and requiring the four 3D points to form a parallelogram fixes the true side lengths up to scale. That gives width/height {{r1.aspect}} for the book and {{r2.aspect}} for the menu. The menu looks like a US-letter sheet, which would be 8.5/11&nbsp;=&nbsp;0.773, and the recovered corner angles are {{r1.angle}}&deg; and {{r2.angle}}&deg;, so I trust the estimates.</p>
+    <p>I rectified three things: a book cover and two printed menus standing on a counter. For each I picked the four corners (top-left, top-right, bottom-right, bottom-left of the real object) and mapped them to the corners of an upright rectangle. With exactly four points, <code>computeH</code> gets a square 8&nbsp;&times;&nbsp;8 system and the corners land exactly where I asked.</p>
+    <p>I did not want to guess the rectangle's proportions, so I estimated them from the photo. The EXIF data says 24&nbsp;mm equivalent, about {{r1.focal}}&nbsp;px at the working size. Shooting a ray from the camera through each corner and requiring the four 3D points to form a parallelogram fixes the true side lengths up to scale. That gives width/height {{r1.aspect}} for the book and {{r2.aspect}} for the front menu. The menu looks like a US-letter sheet, which would be 8.5/11&nbsp;=&nbsp;0.773, and the recovered corner angles are {{r1.angle}}&deg; and {{r2.angle}}&deg;, so I trust the estimates.</p>
   </div>
 
   <div class="rectify" data-rect="0">
@@ -317,7 +346,7 @@
   <div class="rectify rectify--flip" data-rect="1">
     <div class="rectify__head">
       <p class="mono">Rectification 2 &middot; {{r2.file}} &middot; output {{r2.w}} &times; {{r2.h}} px</p>
-      <h3>The menu</h3>
+      <h3>The front menu</h3>
     </div>
     <div class="rectify__stage">
       <figure class="frame-tilted frame-tilted--r">
@@ -349,6 +378,48 @@
       </div>
     </div>
     <figure class="static-figs static-figs--one"><img src="{{r2.comparison}}" alt="Static figure: original menu with corners, nearest-neighbor result, bilinear result." loading="lazy"><figcaption>Original with corners, nearest neighbor, bilinear.</figcaption></figure>
+  </div>
+
+
+  <div class="rectify" data-rect="2">
+    <div class="rectify__head">
+      <p class="mono">Rectification 3 &middot; {{r3.file}} &middot; output {{r3.w}} &times; {{r3.h}} px</p>
+      <h3>The menu behind it</h3>
+    </div>
+    <div class="rectify__stage">
+      <figure class="frame-tilted">
+        <div class="frame-tilted__inner" style="--ar: {{r3.src_aspect}}">
+          <img src="{{r3.source}}" alt="The same counter photo; the second menu stands behind the first, turned sharply away from the camera." loading="lazy">
+          <svg class="quad" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true" data-quad="2"></svg>
+        </div>
+        <figcaption class="mono">same photo, second menu, corners TL &rarr; TR &rarr; BR &rarr; BL</figcaption>
+      </figure>
+      <div class="viewer" style="--ar: {{r3.out_aspect}}">
+        <input type="radio" name="v3" id="v3-o" class="viewer__radio"><input type="radio" name="v3" id="v3-n" class="viewer__radio"><input type="radio" name="v3" id="v3-b" class="viewer__radio" checked>
+        <div class="viewer__seg" role="group" aria-label="Choose what the right panel shows">
+          <label for="v3-o">Context</label><label for="v3-n">Nearest</label><label for="v3-b">Bilinear</label>
+        </div>
+        <div class="viewer__frame">
+          <img class="viewer__layer viewer__layer--o" src="{{r3.context}}" alt="The same homography applied to a wider area around the second menu." loading="lazy">
+          <img class="viewer__layer viewer__layer--n" src="{{r3.nearest}}" alt="Rectified second menu, nearest-neighbor sampling. The first menu's stand covers a strip on the left." loading="lazy">
+          <img class="viewer__layer viewer__layer--b" src="{{r3.bilinear}}" alt="Rectified second menu, bilinear sampling." loading="lazy">
+        </div>
+      </div>
+    </div>
+    <div class="loupe">
+      <figure><img src="{{r3.zoom_nearest}}" alt="Close-up of the nearest-neighbor result on the second menu." loading="lazy"><figcaption class="mono">nearest &middot; {{r3.t_nn}} ms</figcaption></figure>
+      <figure><img src="{{r3.zoom_bilinear}}" alt="Same close-up with bilinear sampling." loading="lazy"><figcaption class="mono">bilinear &middot; {{r3.t_bil}} ms</figcaption></figure>
+      <div class="loupe__note">
+        <p class="mono">close-up, {{r3.zoomx}}&times; pixel replication</p>
+        <p>This sheet is turned much further from the camera than the front menu, so its far side is squeezed into very few pixels. Each source pixel there covers {{r3.mag}} output pixels, which is where the two samplers differ most.</p>
+        <details class="hmini"><summary class="mono">H (photo &rarr; rectangle)</summary>{{r3.matrix}}</details>
+      </div>
+    </div>
+    <div class="pinned-note pinned-note--rect">
+      <p class="hand">the hidden corner</p>
+      <p>This menu's left edge is behind the front stand, so two of its corners are not visible. I fit straight lines to the top, right and bottom edges of the sheet. The right edge and a printed vertical line on the sheet meet far below the photo at the vertical vanishing point, and the hidden left edge has to pass through that point too. Assuming the sheet is the same size as the front menu (same stand, same paper), that fixes where the left edge is. The bottom-left corner it predicts lands within about 25&nbsp;px of where the sheet visibly meets the stand, which is a good check. The strip on the left of the result is the front stand, which really is in front of the sheet.</p>
+    </div>
+    <figure class="static-figs static-figs--one"><img src="{{r3.comparison}}" alt="Static figure: second menu with corners, nearest-neighbor result, bilinear result." loading="lazy"><figcaption>Original with corners, nearest neighbor, bilinear.</figcaption></figure>
   </div>
 
   <div class="prose prose--two prose--notes">
@@ -384,6 +455,7 @@
       <div>
         <h3>{{m1.title}}</h3>
         <p class="mono">3 frames &middot; canvas {{m1.size}} px &middot; reference {{m1.ref}}</p>
+        <p class="mono plate-ex__exif">{{m1.f2.exif}}</p>
       </div>
     </header>
     <div class="pano" data-pano>
@@ -425,6 +497,7 @@
       <div>
         <h3>{{m2.title}}</h3>
         <p class="mono">3 frames &middot; canvas {{m2.size}} px &middot; reference {{m2.ref}}</p>
+        <p class="mono plate-ex__exif">{{m2.f2.exif}}</p>
       </div>
     </header>
     <div class="pano" data-pano>
@@ -466,6 +539,7 @@
       <div>
         <h3>{{m3.title}}</h3>
         <p class="mono">3 frames &middot; canvas {{m3.size}} px &middot; reference {{m3.ref}}</p>
+        <p class="mono plate-ex__exif">{{m3.f2.exif}}</p>
       </div>
     </header>
     <div class="pano" data-pano>
@@ -502,6 +576,7 @@
   <p class="live-only live-only--center">On the live site each close-up is a draggable before/after slider, and each panorama can be scrolled through or opened at full resolution.</p>
 </section>
 
+<div class="film-edge" aria-hidden="true"><span>&#9656; 24</span><span>MOM 400</span><span>&#9656; 25</span><span>24A</span><span>&#9656; 26</span><span>MOM 400</span><span>&#9656; 27</span><span>26A</span></div>
 <!-- ===================================================== 05 · SEAMS -->
 <section id="seams" class="sheet sheet--plum" aria-labelledby="h-seams">
   <header class="sec-head sec-head--split">
@@ -620,7 +695,7 @@
     <p class="mono">CS180 / 280A &middot; Project 4A &middot; Part A</p>
     <p><a href="{{site_url}}">{{site_url}}</a></p>
   </div>
-  <p class="footer__small">All photographs are my own, taken on October 27, 2026. Every image on this page is an output of my Project 4A code or one of its input photos. Typefaces: Cormorant Garamond, Manrope, IBM Plex Mono and Caveat (SIL Open Font License, via Google Fonts). Textures, icons and the skyline are drawn in CSS and SVG for this page.</p>
+  <p class="footer__small">All photographs are my own. Every image on this page is an output of my Project 4A code or one of its input photos. Typefaces: Cormorant Garamond, Manrope, IBM Plex Mono and Caveat (SIL Open Font License, via Google Fonts). Textures, icons and the skyline are drawn in CSS and SVG for this page.</p>
   <svg class="footer__apple" aria-hidden="true"><use href="#apple"/></svg>
 </footer>
 
