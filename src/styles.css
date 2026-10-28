@@ -712,3 +712,24 @@ html, body { overflow-x: clip; }
   .threads__pair { grid-template-columns: minmax(0, 1fr); gap: 26px; }
   .threads__svg .pt circle { r: 4.5px; }
 }
+@media print {
+  section { break-before: auto; }
+  #points, #perspective, #stitching, #seams, #behind { break-before: page; }
+  .rectify, .plate-ex, .bells { break-before: auto; }
+  .rectify { margin-bottom: 8mm; }
+  .plate-ex { margin-bottom: 8mm; }
+  .plate-ex__head, .rectify__head, .sec-head, .small-head { break-after: avoid; }
+  .pano { break-inside: avoid; }
+  .loupe figure img { max-height: 55mm; }
+  .static-pair img { max-height: 80mm; }
+  .static-figs--one img { max-height: 75mm; width: auto; margin: 0 auto; }
+  .prose--notes { break-inside: auto; }
+  .gallery .filmstrip__frame img { max-height: 85mm; width: auto; margin: 0 auto; }
+  .sheet--letter { padding: 0 !important; }
+}
+@media print {
+  .all-h__grid { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3mm; }
+  .all-h__grid figure { padding: 2mm; }
+  #gallery { break-before: page; }
+  .math__card--h { margin-bottom: 3mm; }
+}
