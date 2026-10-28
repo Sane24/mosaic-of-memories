@@ -111,10 +111,9 @@ def matrix_html(H, cls: str = "") -> str:
 
 
 def exif_line(e: dict) -> str:
-    t = e.get("DateTimeOriginal", "")[11:16]
     shutter = e.get("ExposureTime")
     sh = f"1/{round(1 / shutter)}" if shutter else "?"
-    return f"{t} &middot; {int(e.get('FocalLengthIn35mmFilm', 0))}mm eq &middot; f/{e.get('FNumber', 0):.2f} &middot; {sh}s &middot; ISO {int(e.get('ISOSpeedRatings', 0))}"
+    return f"{int(e.get('FocalLengthIn35mmFilm', 0))}mm eq &middot; f/{e.get('FNumber', 0):.2f} &middot; {sh}s &middot; ISO {int(e.get('ISOSpeedRatings', 0))}"
 
 
 # --------------------------------------------------------------------------
@@ -142,7 +141,10 @@ def build_mosaic(mo: dict, values: dict, data: dict) -> None:
     # warped layers (hero uses mosaic1) and per-frame blending shares
     for i, f in enumerate(mo["frames"]):
         src = Image.open(PROJECT / f["source"]).convert("RGB")
-        frame = {"file": f["file"], "size": f["size"], "exif": exif_line(f["exif"]),
+        e = f["exif"]
+        frame = {"file": f["file"], "size": f["size"], "exif": exif_line(e),
+                 "cam": {"f": e.get("FNumber"), "t": e.get("ExposureTime"), "iso": e.get("ISOSpeedRatings"),
+                         "mm": e.get("FocalLengthIn35mmFilm")},
                  "src": save_jpg(fit(src, long_side=1600), f"{name}_frame{i + 1}.jpg", quality=84)}
         warped = open_rgba(mo["outputs"]["warped"][i])
         frame["warped"] = save_webp(fit(warped, 2400), f"{name}_warped{i + 1}.webp", quality=78)
@@ -267,6 +269,66 @@ def build_rect(r: dict, values: dict, data: dict) -> None:
     values[f"{pre}.mag"] = f"{r['zoom_magnification'][0]:.2f} to {r['zoom_magnification'][1]:.2f}"
 
 
+def build_skyline(sk: dict, values: dict, data: dict) -> None:
+    out = {"runs": [], "frames": []}
+    runs = [dict(sk["planar"], kind="planar", label="Planar")] + [
+        dict(c, kind="cylinder", label=f"{c['scale']:g}\u00d7 f") for c in sk["cylinder"]]
+    for r in runs:
+        im = open_rgba(r["file"])
+        tag = Path(r["file"]).stem
+        W, H = im.size
+        full_scale = r["scale"] if r["kind"] == "planar" else 1.0
+        entry = {"kind": r["kind"], "label": r["label"], "src": save_webp(fit(im, 2400), f"{tag}_2400.webp"),
+                 "full": save_webp(fit(im, 6000), f"{tag}_full.webp", quality=80),
+                 "w": W, "h": H, "coverage": r["coverage"],
+                 "mag_median": r["mag_median"] / full_scale, "mag_max": r["mag_max"] / full_scale,
+                 "f": r.get("f"), "scale": r["scale"]}
+        if r["kind"] == "planar":
+            entry["w_full"], entry["h_full"] = round(W / full_scale), round(H / full_scale)
+        out["runs"].append(entry)
+        if r["kind"] == "planar" or r["scale"] == sk["chosen"]:
+            key = "planar" if r["kind"] == "planar" else "cyl"
+            values[f"sk.{key}.src"] = entry["src"]
+            values[f"sk.{key}.full"] = entry["full"]
+            values[f"sk.{key}.print"] = save_jpg(fit(im, 2000), f"{tag}_print.jpg", bg=(255, 255, 255))
+            values[f"sk.{key}.aspect"] = f"{W / H:.4f}"
+            values[f"sk.{key}.size"] = f"{entry.get('w_full', W):,} &times; {entry.get('h_full', H):,}"
+            values[f"sk.{key}.coverage"] = f"{100 * r['coverage']:.0f}"
+            values[f"sk.{key}.mag_median"] = f"{entry['mag_median']:.2f}"
+            values[f"sk.{key}.mag_max"] = f"{entry['mag_max']:.2f}"
+            # same 560 x 380 output-pixel window around two landmarks
+            for k, (mx, my) in enumerate(r["marks"]):
+                box = (round(mx - 280), round(my - 190), round(mx + 280), round(my + 190))
+                values[f"sk.{key}.crop{k + 1}"] = save_jpg(im.crop(box), f"{tag}_crop{k + 1}.jpg", quality=88)
+    for c in sk["cylinder"]:
+        k = f"{c['scale']:g}".replace(".", "p")
+        values[f"sk.c{k}.f"] = f"{c['f']:.0f}"
+        values[f"sk.c{k}.size"] = f"{c['width']:,} &times; {c['height']:,}"
+        values[f"sk.c{k}.coverage"] = f"{100 * c['coverage']:.0f}"
+        values[f"sk.c{k}.mag_median"] = f"{c['mag_median']:.2f}"
+        values[f"sk.c{k}.mag_max"] = f"{c['mag_max']:.2f}"
+        values[f"sk.c{k}.thumb"] = save_jpg(fit(open_rgba(c["file"]), 900), f"skyline_thumb_{k}.jpg",
+                                            bg=(255, 255, 255))
+    values["sk.planar.scale"] = f"{sk['planar']['scale']:.2f}"
+    values["sk.planar.thumb"] = save_jpg(fit(open_rgba(sk["planar"]["file"]), 900), "skyline_thumb_planar.jpg",
+                                         bg=(255, 255, 255))
+    values["sk.f_exif"] = f"{sk['f_exif']:.0f}"
+    chosen = next(c for c in sk["cylinder"] if c["scale"] == sk["chosen"])
+    values["sk.span"] = f"{np.degrees(chosen['width'] / chosen['f']):.0f}"
+    for i, f in enumerate(sk["frames"]):
+        src = Image.open(PROJECT / f["source"]).convert("RGB")
+        values[f"sk.f{i + 1}.src"] = save_jpg(fit(src, long_side=900), f"skyline_frame{i + 1}.jpg", quality=82)
+        values[f"sk.f{i + 1}.file"] = f["file"]
+        values[f"sk.f{i + 1}.exif"] = exif_line(f["exif"])
+    for k, pr in enumerate(sk["pairs"]):
+        values[f"sk.p{k + 1}.from"] = sk["frames"][pr["from"]]["file"]
+        values[f"sk.p{k + 1}.to"] = sk["frames"][pr["to"]]["file"]
+        values[f"sk.p{k + 1}.count"] = str(pr["count"])
+        values[f"sk.p{k + 1}.mean"] = f"{pr['error_mean']:.2f}"
+        values[f"sk.p{k + 1}.max"] = f"{pr['error_max']:.2f}"
+    data["skyline"] = out
+
+
 def render(template: str, values: dict) -> str:
     missing = set()
 
@@ -294,6 +356,7 @@ def main() -> None:
         build_mosaic(mo, values, data)
     for r in manifest["rectifications"]:
         build_rect(r, values, data)
+    build_skyline(manifest["skyline"], values, data)
     (DOCS / "assets" / "data.js").write_text(
         "window.MOSAIC_DATA = " + json.dumps(data, separators=(",", ":")) + ";\n")
     for f in ("styles.css", "app.js"):
