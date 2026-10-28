@@ -12,4 +12,7 @@ into `docs/`. The image-processing code is not published here.
 python build.py                                   # rebuild docs/ from ../outputs
 python -m http.server 8642 --directory docs       # preview locally
 python tools/shoot.py pdf page.pdf                # print-to-PDF (needs playwright)
+sh tools/deploy.sh                                # publish docs/ to the gh-pages branch
 ```
+
+GitHub Pages serves the `gh-pages` branch, which is a copy of `docs/`.
