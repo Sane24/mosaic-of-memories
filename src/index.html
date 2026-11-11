@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mosaic of Memories</title>
-<meta name="description" content="CS180 Project 4A: image warping and mosaicing. Manual homographies, inverse warping, perspective rectification and feathered photo mosaics.">
+<meta name="description" content="CS180 Project 4: image warping and mosaicing by hand (Part A), then feature matching for autostitching with Harris corners, ANMS, patch descriptors and RANSAC (Part B).">
 <meta name="color-scheme" content="dark light">
 <link rel="canonical" href="{{site_url}}">
 <link rel="icon" href="assets/reel.svg" type="image/svg+xml">
@@ -46,7 +46,7 @@
   <a href="https://sane24.github.io/Russian-Doll-Pyramid/"><b>01</b> Russian Doll Pyramid</a>
   <a href="https://sane24.github.io/Twilight-Filter/"><b>02</b> Twilight Filter</a>
   <a href="https://sane24.github.io/flow-of-water/"><b>03</b> Flow of Water</a>
-  <a href="{{site_url}}" aria-current="page"><b>04A</b> Mosaic of Memories</a>
+  <a href="{{site_url}}" aria-current="page"><b>04 A+B</b> Mosaic of Memories</a>
 </nav>
 
 <header class="topbar">
@@ -54,21 +54,33 @@
     <svg class="brand__reel" aria-hidden="true"><use href="#reel"/></svg>
     <span>Mosaic <i>of</i> Memories</span>
   </a>
+  <div class="reelswitch" role="group" aria-label="Part of the project">
+    <span>Part</span>
+    <a href="#fragments" data-reel="a" title="Part A (reel A): stitched by hand" aria-label="Part A, stitched by hand">A</a>
+    <a href="#reel-b" data-reel="b" title="Part B (reel B): stitched automatically" aria-label="Part B, stitched automatically">B</a>
+  </div>
   <nav class="topnav" aria-label="Sections">
-    <a href="#fragments"><b>01</b> Fragments</a>
-    <a href="#points"><b>02</b> Same points</a>
-    <a href="#perspective"><b>03</b> Perspective</a>
-    <a href="#stitching"><b>04</b> Stitching</a>
-    <a href="#seams"><b>05</b> Seams</a>
-    <a href="#extras"><b>06</b> Extras</a>
-    <a href="#behind"><b>07</b> Behind</a>
-    <a href="#gallery"><b>08</b> Gallery</a>
+    <a href="#fragments" data-part="a"><b>01</b> Fragments</a>
+    <a href="#points" data-part="a"><b>02</b> Same points</a>
+    <a href="#perspective" data-part="a"><b>03</b> Perspective</a>
+    <a href="#stitching" data-part="a"><b>04</b> Stitching</a>
+    <a href="#seams" data-part="a"><b>05</b> Seams</a>
+    <a href="#extras" data-part="a"><b>06</b> Extras</a>
+    <a href="#corners" data-part="b"><b>07</b> Corners</a>
+    <a href="#descriptors" data-part="b"><b>08</b> Patches</a>
+    <a href="#matching" data-part="b"><b>09</b> Matches</a>
+    <a href="#ransac" data-part="b"><b>10</b> RANSAC</a>
+    <a href="#automatic" data-part="b"><b>11</b> No hands</a>
+    <a href="#shoebox" data-part="b"><b>12</b> Shoebox</a>
+    <a href="#behind"><b>13</b> Behind</a>
+    <a href="#gallery"><b>14</b> Gallery</a>
   </nav>
   <span class="counter mono" aria-hidden="true"><svg><use href="#reel"/></svg><b data-counter>FR 000</b></span>
   <a class="permalink" href="{{site_url}}"><span class="permalink__dot" aria-hidden="true"></span>{{site_url_short}}</a>
 </header>
 
-<main id="part-a" data-part="a">
+<main>
+<div id="part-a" data-part="a">
 
 <!-- ===================================================== 00 · OPENING -->
 <section class="hero" aria-labelledby="title">
@@ -76,7 +88,7 @@
   <div class="hero__top">
     <div class="hero__left">
       <div class="hero__meta">
-        <span>CS180</span><span>Project 04A</span><span>Image Warping &amp; Mosaicing</span>
+        <span>CS180</span><span>Project 04 &middot; A + B</span><span>Image Warping &amp; Mosaicing</span>
       </div>
       <p class="print-url">Website: <a href="{{site_url}}">{{site_url}}</a></p>
       <h1 id="title" class="hero__title">
@@ -137,10 +149,10 @@
   </figure>
 
   <div class="hero__intro">
-    <p>Thirteen photographs from one afternoon around Berkeley, a few dozen points I matched by hand, and a 3&times;3 matrix for every pair. This is my write-up for Part A of the image mosaicing project: recovering homographies, warping with my own nearest-neighbor and bilinear samplers, rectifying three views of flat objects, blending three panoramas, and, as an extra, wrapping a five-frame panorama onto a cylinder.</p>
+    <p>Thirteen photographs from one afternoon around Berkeley, a few dozen points I matched by hand, and a 3&times;3 matrix for every pair. This is my write-up for the image mosaicing project, in two reels. Reel A is Part A: recovering homographies, warping with my own nearest-neighbor and bilinear samplers, rectifying three views of flat objects, blending three panoramas, and, as an extra, wrapping a five-frame panorama onto a cylinder. Reel B is Part B: the same panoramas again with no clicking at all, using Harris corners, small patch descriptors and RANSAC.</p>
   </div>
 
-  <a class="hero__scroll" href="#fragments">Begin with the frames</a>
+  <div class="hero__links"><a class="hero__scroll" href="#fragments">Reel A: begin with the frames</a><a class="hero__scroll hero__scroll--b" href="#reel-b">Reel B: skip to automatic</a></div>
 </section>
 
 <!-- ===================================================== 01 · FRAGMENTS -->
@@ -463,6 +475,7 @@
 
   <div class="prose prose--narrow">
     <p>To size the canvas, I push the four corners of every frame through its homography, take the bounding box, and offset the output so its top-left pixel sits at that box's minimum (usually negative) corner. Each frame is then inverse-warped onto the full canvas with bilinear sampling and its own validity mask. Before blending I scale each side frame so its median color in the overlap matches the middle frame, then feather all three together (details in section 05). The bow-tie shape is real: a flat projection stretches anything far from the middle frame's viewing direction, so the outer corners fan out.</p>
+    <p class="live-only">On the live site each close-up below is a draggable before/after slider, and clicking any panorama reveals the original photo behind that spot. The printed version shows the two close-ups side by side.</p>
   </div>
 
   <!-- PLATE I -->
@@ -590,7 +603,6 @@
       <figure><img src="{{m3.detail_feather}}" alt="Feathered close-up." loading="lazy"><figcaption>Feathered</figcaption></figure>
     </div>
   </article>
-  <p class="live-only live-only--center">On the live site each close-up is a draggable before/after slider, and clicking any panorama reveals the original photo behind that spot.</p>
 </section>
 
 <div class="film-edge" aria-hidden="true"><span>&#9656; 24</span><span>MOM 400</span><span>&#9656; 25</span><span>24A</span><span>&#9656; 26</span><span>MOM 400</span><span>&#9656; 27</span><span>26A</span></div>
@@ -767,11 +779,452 @@
   </div>
 </section>
 
-<!-- ===================================================== 07 · BEHIND -->
+</div>
+
+<div id="part-b" data-part="b">
+
+<!-- ===================================================== REEL B -->
+<section id="reel-b" class="reelcard" aria-labelledby="h-reelb">
+  <div class="reelcard__leader" aria-hidden="true"><span>END OF REEL A</span><i></i><i></i><i></i><span>REEL B &middot; HEADS</span></div>
+  <p class="mono reelcard__meta">CS180 &middot; Project 04B &middot; Feature Matching for Autostitching</p>
+  <h2 id="h-reelb">Reel B: <i>no hands</i></h2>
+  <p class="reelcard__lede">The same nine frames, stitched again. In reel A I picked every matching point myself. Here the code finds its own corners, describes them, matches them, votes out the bad matches, and hands the homography to the same warping and blending code as before.</p>
+  <ol class="funnel" aria-label="What happens to one pair of photos, plate II left pair">
+    <li><b>{{b2.f1.all}}</b><span>local maxima of corner strength in frame 04</span></li>
+    <li><b>{{b2.f1.harris}}</b><span>above the strength threshold</span></li>
+    <li><b>{{b2.f1.kept}}</b><span>kept by ANMS</span></li>
+    <li><b>{{b2.p1.matches}}</b><span>matches after the ratio test</span></li>
+    <li><b>{{b2.p1.inliers}}</b><span>agree under RANSAC</span></li>
+    <li><b>1</b><span>homography</span></li>
+  </ol>
+  <p class="mono reelcard__note">plate II, left pair &middot; {{b2.p1.from}} &rarr; {{b2.p1.to}} &middot; every number on this reel is read from the pipeline's output</p>
+</section>
+
+<!-- ===================================================== 07 · CORNERS -->
+<section id="corners" class="sheet sheet--night" aria-labelledby="h-corners">
+  <header class="sec-head sec-head--split">
+    <p class="sec-num">07 <span>/ B.1 Harris corners and ANMS</span></p>
+    <h2 id="h-corners">Corners worth <i>keeping</i></h2>
+    <p class="sec-lede">A corner is a spot that changes if you nudge the window in any direction. A photo has tens of thousands. I need a couple of thousand, and I need them spread out.</p>
+  </header>
+
+  <div class="prose prose--two">
+    <p>For detection I used the Harris code that comes with the assignment. It scores every pixel with a corner strength (det&nbsp;/&nbsp;trace of the smoothed gradient matrix, the same harmonic-mean measure the MOPS paper uses) and returns every local maximum in a 3&times;3 neighbourhood, leaving out a 20&nbsp;px border. On the 1800&nbsp;px middle frame of plate II that is {{b2.f2.all}} points, and most of them are noise in the sky and other flat areas. Like the paper, I only keep maxima above a strength threshold ({{b.harris_min}}, with pixel values between 0 and 1). That leaves {{b2.f2.harris}} corners.</p>
+    <p>Taking the {{b.n_points}} strongest would be the obvious next step, and it is a bad one. Corner strength follows contrast, so the strongest corners pile up on the backlit treetop and the iron window grille and leave the lawn and most of the facade empty. If the part of the photo that overlaps its neighbour happens to be a low-contrast area, there is nothing left there to match.</p>
+  </div>
+
+  <div class="cornerlab" data-cornerlab>
+    <div class="cornerlab__bar">
+      <div class="cornerlab__tabs" role="tablist" aria-label="Choose a photo" data-cl-tabs></div>
+      <div class="seg" role="group" aria-label="Which corners to show">
+        <button type="button" data-cl-mode="all" aria-pressed="false">All Harris</button>
+        <button type="button" data-cl-mode="strongest" aria-pressed="false">Strongest</button>
+        <button type="button" data-cl-mode="anms" aria-pressed="true">ANMS</button>
+      </div>
+    </div>
+    <div class="cornerlab__stage" data-cl-stage>
+      <img alt="" data-cl-photo>
+      <img alt="" class="cornerlab__all" data-cl-all>
+      <canvas data-cl-canvas aria-hidden="true"></canvas>
+      <span class="vf vf--tl"></span><span class="vf vf--tr"></span><span class="vf vf--bl"></span><span class="vf vf--br"></span>
+    </div>
+    <div class="cornerlab__dial">
+      <label class="mono" for="cl-n">points kept</label>
+      <input id="cl-n" class="lensring__input" type="range" min="50" max="2000" step="50" value="500" data-cl-n>
+      <p class="mono cornerlab__readout" data-cl-readout aria-live="polite"></p>
+    </div>
+    <p class="live-only">Interactive on the live site: switch between every Harris corner, the strongest N and the N chosen by ANMS, and change N. The static figure below shows the same three views.</p>
+  </div>
+
+  <figure class="static-figs static-figs--one static-figs--always"><img src="{{b2.corners}}" alt="Three views of the middle building frame: all Harris corners above the threshold, the strongest 2,000 clustered on the treetop and window grille, and the 2,000 chosen by ANMS spread evenly over the frame." loading="lazy"><figcaption>{{b2.ref}}: every Harris corner above the threshold, the {{b.n_points}} strongest, and the {{b.n_points}} kept by ANMS.</figcaption></figure>
+
+  <div class="math math--b">
+    <div class="math__card math__card--wide index-card">
+      <p class="mono card-label">adaptive non-maximal suppression</p>
+      <div class="eq eq--big">
+        <span><var>r</var><sub><var>i</var></sub> = min<sub><var>j</var></sub> &Vert;<b>x</b><sub><var>i</var></sub> &minus; <b>x</b><sub><var>j</var></sub>&Vert;</span>
+        <span class="eq__cond">over the corners <var>j</var> with &nbsp;<var>f</var>(<b>x</b><sub><var>i</var></sub>) &lt; {{b.c_robust}} <var>f</var>(<b>x</b><sub><var>j</var></sub>)</span>
+      </div>
+      <p>Every corner gets a suppression radius <var>r</var><sub><var>i</var></sub>: the distance to the nearest corner that is clearly stronger, where clearly means that even {{b.c_robust}} times its strength <var>f</var> still beats mine. The strongest corner in the photo has an infinite radius. A corner that is the best thing for 80&nbsp;px around has radius 80. A corner sitting right next to a stronger one has a radius of a few pixels. Keeping the {{b.n_points}} largest radii is the same as growing one suppression radius until exactly {{b.n_points}} corners survive, except that there is nothing to search for. In this frame that radius comes out at {{b2.f2.radius}}&nbsp;px.</p>
+      <p>In code, I sort the corners by strength first. Then the corners allowed to suppress corner <var>i</var> are simply the start of the list, and the distances can be computed in blocks with NumPy. The caf&eacute; frames have between {{b3.f3.harris}} and {{b3.f1.harris}} corners above the threshold and still take only a few seconds each.</p>
+    </div>
+  </div>
+
+  <div class="tally" aria-label="Corners per frame">
+    <p class="mono tally__label">corners above threshold &rarr; kept by ANMS (final radius)</p>
+    <ul>
+      <li><b>01</b> {{b1.f1.harris}} &rarr; {{b1.f1.kept}} <span>{{b1.f1.radius}} px</span></li>
+      <li><b>02</b> {{b1.f2.harris}} &rarr; {{b1.f2.kept}} <span>{{b1.f2.radius}} px</span></li>
+      <li><b>03</b> {{b1.f3.harris}} &rarr; {{b1.f3.kept}} <span>{{b1.f3.radius}} px</span></li>
+      <li><b>04</b> {{b2.f1.harris}} &rarr; {{b2.f1.kept}} <span>{{b2.f1.radius}} px</span></li>
+      <li><b>05</b> {{b2.f2.harris}} &rarr; {{b2.f2.kept}} <span>{{b2.f2.radius}} px</span></li>
+      <li><b>06</b> {{b2.f3.harris}} &rarr; {{b2.f3.kept}} <span>{{b2.f3.radius}} px</span></li>
+      <li><b>07</b> {{b3.f1.harris}} &rarr; {{b3.f1.kept}} <span>{{b3.f1.radius}} px</span></li>
+      <li><b>08</b> {{b3.f2.harris}} &rarr; {{b3.f2.kept}} <span>{{b3.f2.radius}} px</span></li>
+      <li><b>09</b> {{b3.f3.harris}} &rarr; {{b3.f3.kept}} <span>{{b3.f3.radius}} px</span></li>
+    </ul>
+    <p class="small">Frames 02 and 03 were exposed for the sun, so most of the picture is nearly black and only a few thousand corners clear the threshold. There ANMS has little or nothing to suppress. The textured frames are where it matters.</p>
+  </div>
+</section>
+
+<!-- ===================================================== 08 · DESCRIPTORS -->
+<section id="descriptors" class="sheet sheet--paper" aria-labelledby="h-desc">
+  <div class="sheet__edge sheet__edge--top" aria-hidden="true"></div>
+  <header class="sec-head sec-head--split">
+    <p class="sec-num">08 <span>/ B.2 Feature descriptors</span></p>
+    <h2 id="h-desc">A corner's <i>fingerprint</i></h2>
+    <p class="sec-lede">To find the same corner in another photo I need something to compare. Each corner gets a tiny 8 by 8 picture of its neighbourhood.</p>
+  </header>
+
+  <div class="prose prose--two">
+    <p>Around every kept corner I take a 40&times;40&nbsp;px window from a blurred grayscale copy of the photo and read one sample every 5&nbsp;px. That gives an 8&times;8 patch, 64 numbers. The blur (a Gaussian with &sigma;&nbsp;=&nbsp;{{b.sigma}}&nbsp;px) is the important part. Reading every fifth pixel of a sharp image would alias, and a soft, low-frequency patch barely changes when the detector puts the corner a pixel or two off in the other photo. The patches are axis-aligned with no rotation handling, which works here because I held the phone level for every frame.</p>
+    <p>Each patch is then normalized to zero mean and unit standard deviation. Subtracting the mean removes brightness, dividing by the spread removes contrast, so the same spot still matches when the two photos were exposed differently. In the sunset set frame 01 is about {{b.ev_sunset}} stops brighter than frame 02, and its corners match anyway. Corners whose window would stick out of the image are dropped, and so are flat patches (standard deviation under 0.001), where dividing by almost nothing would only amplify noise.</p>
+  </div>
+
+  <div class="desclab" data-desclab>
+    <div class="desclab__bar">
+      <div class="cornerlab__tabs" role="tablist" aria-label="Choose a photo" data-dl-tabs></div>
+      <button type="button" class="btn" data-dl-shuffle>Print another sheet</button>
+    </div>
+    <div class="desclab__body">
+      <figure class="desclab__locator">
+        <div class="desclab__photo"><img alt="" data-dl-photo><canvas data-dl-canvas aria-hidden="true"></canvas></div>
+        <figcaption class="mono" data-dl-cap></figcaption>
+      </figure>
+      <ol class="desclab__sheet" data-dl-sheet aria-label="Twelve features: 40 by 40 window and 8 by 8 descriptor"></ol>
+    </div>
+    <p class="live-only">Interactive on the live site: a contact sheet of twelve random features that can be redrawn. The static figure below shows ten.</p>
+  </div>
+
+  <figure class="static-figs static-figs--one static-figs--always"><img src="{{b2.descriptors}}" alt="Ten features from the middle building frame. Top row: the 40 by 40 pixel window around each corner. Middle row: the same window after blurring. Bottom row: the normalized 8 by 8 descriptor." loading="lazy"><figcaption>Ten of the {{b.n_points}} features of {{b2.ref}}: the 40&times;40 window, the blurred window, and the normalized 8&times;8 descriptor sampled from it.</figcaption></figure>
+  <div class="sheet__edge sheet__edge--bottom" aria-hidden="true"></div>
+</section>
+
+<div class="stitch-rule" aria-hidden="true"></div>
+
+<!-- ===================================================== 09 · MATCHING -->
+<section id="matching" class="sheet sheet--charcoal" aria-labelledby="h-match">
+  <header class="sec-head sec-head--split">
+    <p class="sec-num">09 <span>/ B.3 Feature matching</span></p>
+    <h2 id="h-match">Asking for a <i>second opinion</i></h2>
+    <p class="sec-lede">The closest descriptor in the other photo is not automatically a match. What counts is how much closer it is than the runner-up.</p>
+  </header>
+
+  <div class="prose prose--two">
+    <p>For every descriptor in a side frame I compute the squared distance to every descriptor in the middle frame and pick out the nearest and the second nearest. The distance to the nearest one is a poor test by itself. A patch of sky or foliage is close to hundreds of other patches, while a distinctive corner can be a correct match at a fairly large distance. Lowe's idea, which the paper adopts, is to compare the best candidate with the second best. If the nearest neighbour is the right one, the runner-up is some unrelated patch and much further away. If the nearest neighbour is wrong, the two are about equally bad.</p>
+    <p>So a match is kept only when the ratio of the two squared distances, 1-NN over 2-NN, is below {{b.ratio}}. In Figure 6b of the paper wrong matches are almost absent below a ratio of 0.4 and overtake the correct ones at about 0.65, so {{b.ratio}} sits just under the crossover. I also require the two features to be each other's nearest neighbour, which removes cases where several corners all pick the same partner.</p>
+  </div>
+
+  <div class="histo">
+    <figure class="histo__chart">
+      <svg viewBox="0 0 640 300" data-histo role="img" aria-label="Histogram of the 1-NN to 2-NN ratio for correct and incorrect nearest-neighbour pairs, with the threshold marked."></svg>
+      <figcaption class="mono"><span class="sw sw--ok"></span>correct &nbsp;<span class="sw sw--bad"></span>incorrect &nbsp;&middot;&nbsp; my version of the paper's Figure 6b, from {{b.hist.n}} nearest-neighbour pairs</figcaption>
+    </figure>
+    <div class="prose">
+      <p>To check that threshold on my own photos I rebuilt the figure. Once the homographies were known, I labelled every nearest-neighbour pair in the six photo pairs as correct or incorrect: does the final homography send the corner to within {{b.eps}}&nbsp;px of its nearest neighbour? Only {{b.hist.n_correct}} of the {{b.hist.n}} pairs are correct, because most corners lie outside the overlap and have no true partner at all.</p>
+      <p>The two distributions have the same shape as in the paper. With the threshold at {{b.ratio}}, {{b.hist.kept_correct}}% of the correct pairs survive and {{b.hist.kept_incorrect}}% of the incorrect ones slip through. The ones that slip through are what RANSAC is for.</p>
+    </div>
+  </div>
+  <figure class="static-figs static-figs--one"><img src="{{b.hist.fig}}" alt="Static version of the ratio histogram." loading="lazy"><figcaption>1-NN / 2-NN squared-error ratio for correct and incorrect nearest neighbours, all six pairs pooled.</figcaption></figure>
+
+  <div class="bench" data-bench="ratio">
+    <div class="bench__tabs" role="tablist" aria-label="Choose a photo pair" data-b-tabs></div>
+    <div class="bench__grid">
+      <div class="bench__stage" data-b-stage>
+        <figure><img alt="" data-b-img="a"><figcaption class="mono" data-b-cap="a"></figcaption></figure>
+        <figure><img alt="" data-b-img="b"><figcaption class="mono" data-b-cap="b"></figcaption></figure>
+        <canvas data-b-canvas aria-hidden="true"></canvas>
+      </div>
+      <aside class="bench__panel">
+        <label class="mono" for="bench-ratio">ratio threshold</label>
+        <input id="bench-ratio" class="lensring__input" type="range" min="20" max="95" step="1" value="60" data-b-ratio>
+        <p class="mono bench__stat" data-b-stat aria-live="polite"></p>
+        <p class="mono bench__key"><span class="sw sw--ok"></span>agrees with the final homography <span class="sw sw--bad"></span>does not</p>
+        <div class="loupe2" data-b-loupe hidden>
+          <div><canvas width="120" height="120" data-b-win="a"></canvas><canvas width="120" height="120" data-b-desc="a"></canvas></div>
+          <div><canvas width="120" height="120" data-b-win="b"></canvas><canvas width="120" height="120" data-b-desc="b"></canvas></div>
+          <p class="mono" data-b-loupecap></p>
+        </div>
+        <p class="bench__hint">Move the threshold and watch wrong matches flood in above 0.7. Hover or tap a match to compare the two windows and their descriptors.</p>
+      </aside>
+    </div>
+    <p class="live-only">Interactive on the live site: choose a pair, move the ratio threshold and inspect individual matches. Static match figures follow.</p>
+  </div>
+
+  <div class="static-figs static-figs--always static-figs--stack">
+    <figure><img src="{{b2.p1.fig_matches}}" alt="Matches between {{b2.p1.from}} and {{b2.p1.to}} after the ratio test, drawn as lines between the two photos." loading="lazy"><figcaption>{{b2.p1.from}} &rarr; {{b2.p1.to}}: {{b2.p1.matches}} matches after the ratio test, before any geometric check.</figcaption></figure>
+    <figure><img src="{{b2.p1.fig_patches}}" alt="Ten matched features: the window in each photo and the two descriptors, which look nearly identical." loading="lazy"><figcaption>Ten of those matches up close: the 40&times;40 window in each photo, and the two descriptors that were compared.</figcaption></figure>
+  </div>
+</section>
+
+<div class="film-edge" aria-hidden="true"><span>&#9656; 30</span><span>MOM 400</span><span>&#9656; 31</span><span>30A</span><span>&#9656; 32</span><span>MOM 400</span><span>&#9656; 33</span><span>32A</span></div>
+
+<!-- ===================================================== 10 · RANSAC -->
+<section id="ransac" class="sheet sheet--plum" aria-labelledby="h-ransac">
+  <header class="sec-head sec-head--split">
+    <p class="sec-num">10 <span>/ B.4 RANSAC</span></p>
+    <h2 id="h-ransac">Letting the matches <i>vote</i></h2>
+    <p class="sec-lede">After the ratio test a good share of the matches is still wrong, and least squares listens to every one of them. RANSAC only listens to matches that agree with each other.</p>
+  </header>
+
+  <div class="ransac-grid">
+    <div class="index-card ransac-card">
+      <p class="mono card-label">4-point RANSAC, {{b.iters}} rounds</p>
+      <ol class="steps">
+        <li>Pick four matches at random.</li>
+        <li>Skip the sample if two of its points coincide or three are nearly on a line, in either photo. Four such points do not pin down a homography.</li>
+        <li>Fit the exact homography through the four with <code>computeH</code> from Part A. If it sends any of its own four points behind the camera, throw it away too.</li>
+        <li>Send every matched corner through it and count the inliers: the matches that land within {{b.eps}}&nbsp;px of their partner.</li>
+        <li>Keep the largest inlier set seen so far.</li>
+      </ol>
+      <p>At the end, refit by least squares on all inliers of the winner (<code>computeH</code> again, now overdetermined), recount the inliers, and repeat until the set stops changing.</p>
+    </div>
+    <div class="prose">
+      <p>How many rounds are enough? If a fraction <var>w</var> of the matches is good, four random ones are all good with probability <var>w</var><sup>4</sup>, and the chance of never drawing a clean sample in <var>N</var> rounds is (1&nbsp;&minus;&nbsp;<var>w</var><sup>4</sup>)<sup><var>N</var></sup>. The hardest pair here is in the caf&eacute;, where only {{b3.p1.pct}}% of the matches end up as inliers. That needs about {{b3.p1.need}} rounds for 99% confidence. The building needs {{b2.p1.need}}. I run {{b.iters}} everywhere and fix the random seed, so rerunning the code gives the same mosaics.</p>
+      <table class="gains ransac-table">
+        <thead><tr><th>pair</th><th>matches</th><th>inliers</th><th>mean error</th><th>rounds for 99%</th></tr></thead>
+        <tbody>
+          <tr><td>I &middot; 01 &rarr; 02</td><td>{{b1.p1.matches}}</td><td>{{b1.p1.inliers}} ({{b1.p1.pct}}%)</td><td>{{b1.p1.err}} px</td><td>{{b1.p1.need}}</td></tr>
+          <tr><td>I &middot; 03 &rarr; 02</td><td>{{b1.p2.matches}}</td><td>{{b1.p2.inliers}} ({{b1.p2.pct}}%)</td><td>{{b1.p2.err}} px</td><td>{{b1.p2.need}}</td></tr>
+          <tr><td>II &middot; 04 &rarr; 05</td><td>{{b2.p1.matches}}</td><td>{{b2.p1.inliers}} ({{b2.p1.pct}}%)</td><td>{{b2.p1.err}} px</td><td>{{b2.p1.need}}</td></tr>
+          <tr><td>II &middot; 06 &rarr; 05</td><td>{{b2.p2.matches}}</td><td>{{b2.p2.inliers}} ({{b2.p2.pct}}%)</td><td>{{b2.p2.err}} px</td><td>{{b2.p2.need}}</td></tr>
+          <tr><td>III &middot; 07 &rarr; 08</td><td>{{b3.p1.matches}}</td><td>{{b3.p1.inliers}} ({{b3.p1.pct}}%)</td><td>{{b3.p1.err}} px</td><td>{{b3.p1.need}}</td></tr>
+          <tr><td>III &middot; 09 &rarr; 08</td><td>{{b3.p2.matches}}</td><td>{{b3.p2.inliers}} ({{b3.p2.pct}}%)</td><td>{{b3.p2.err}} px</td><td>{{b3.p2.need}}</td></tr>
+        </tbody>
+      </table>
+      <p class="small">Mean error is the distance, in pixels at the 1800&nbsp;px working size, between each inlier and where the final homography puts it.</p>
+    </div>
+  </div>
+
+  <div class="bench" data-bench="ransac">
+    <div class="bench__tabs" role="tablist" aria-label="Choose a photo pair" data-b-tabs></div>
+    <div class="bench__grid">
+      <div class="bench__stage" data-b-stage>
+        <figure><img alt="" data-b-img="a"><figcaption class="mono" data-b-cap="a"></figcaption></figure>
+        <figure><img alt="" data-b-img="b"><figcaption class="mono" data-b-cap="b"></figcaption></figure>
+        <canvas data-b-canvas aria-hidden="true"></canvas>
+      </div>
+      <aside class="bench__panel">
+        <div class="bench__btns">
+          <button type="button" class="btn" data-b-play>Replay RANSAC</button>
+          <button type="button" class="btn btn--ghost" data-b-prev aria-label="Previous improvement">&#8249;</button>
+          <button type="button" class="btn btn--ghost" data-b-next aria-label="Next improvement">&#8250;</button>
+        </div>
+        <p class="mono bench__stat" data-b-stat aria-live="polite"></p>
+        <p class="mono bench__key"><span class="sw sw--pick"></span>the four sampled matches <span class="sw sw--in"></span>inliers <span class="sw sw--bad"></span>outliers</p>
+        <div class="loupe2" data-b-loupe hidden>
+          <div><canvas width="120" height="120" data-b-win="a"></canvas><canvas width="120" height="120" data-b-desc="a"></canvas></div>
+          <div><canvas width="120" height="120" data-b-win="b"></canvas><canvas width="120" height="120" data-b-desc="b"></canvas></div>
+          <p class="mono" data-b-loupecap></p>
+        </div>
+        <p class="bench__hint">The replay steps through every round that beat the best so far, using the real samples my run drew, then shows the least-squares result.</p>
+      </aside>
+    </div>
+    <p class="live-only">Interactive on the live site: replay the rounds in which RANSAC improved, for each pair. The static figures below show the final inliers and outliers of all six pairs.</p>
+  </div>
+
+  <div class="static-figs static-figs--always">
+    <figure><img src="{{b2.p1.fig_ransac}}" alt="RANSAC result for {{b2.p1.from}} to {{b2.p1.to}}: inliers in green, outliers in red." loading="lazy"><figcaption>II &middot; {{b2.p1.from}} &rarr; {{b2.p1.to}}: {{b2.p1.inliers}} inliers, {{b2.p1.outliers}} outliers</figcaption></figure>
+    <figure><img src="{{b2.p2.fig_ransac}}" alt="RANSAC result for {{b2.p2.from}} to {{b2.p2.to}}." loading="lazy"><figcaption>II &middot; {{b2.p2.from}} &rarr; {{b2.p2.to}}: {{b2.p2.inliers}} inliers, {{b2.p2.outliers}} outliers</figcaption></figure>
+    <figure><img src="{{b3.p1.fig_ransac}}" alt="RANSAC result for {{b3.p1.from}} to {{b3.p1.to}}." loading="lazy"><figcaption>III &middot; {{b3.p1.from}} &rarr; {{b3.p1.to}}: {{b3.p1.inliers}} inliers, {{b3.p1.outliers}} outliers</figcaption></figure>
+    <figure><img src="{{b3.p2.fig_ransac}}" alt="RANSAC result for {{b3.p2.from}} to {{b3.p2.to}}: the inliers sit on the concrete pillar." loading="lazy"><figcaption>III &middot; {{b3.p2.from}} &rarr; {{b3.p2.to}}: {{b3.p2.inliers}} inliers, {{b3.p2.outliers}} outliers</figcaption></figure>
+    <figure><img src="{{b1.p1.fig_ransac}}" alt="RANSAC result for {{b1.p1.from}} to {{b1.p1.to}}." loading="lazy"><figcaption>I &middot; {{b1.p1.from}} &rarr; {{b1.p1.to}}: {{b1.p1.inliers}} inliers, {{b1.p1.outliers}} outliers</figcaption></figure>
+    <figure><img src="{{b1.p2.fig_ransac}}" alt="RANSAC result for {{b1.p2.from}} to {{b1.p2.to}}." loading="lazy"><figcaption>I &middot; {{b1.p2.from}} &rarr; {{b1.p2.to}}: {{b1.p2.inliers}} inliers, {{b1.p2.outliers}} outliers</figcaption></figure>
+  </div>
+
+  <details class="all-h" open>
+    <summary class="mono">The six automatic homographies (side frame &rarr; middle frame, least squares on the RANSAC inliers)</summary>
+    <div class="all-h__grid">
+      <figure><figcaption class="mono">I &middot; {{b1.p1.from}} &rarr; {{b1.p1.to}} &middot; {{b1.p1.inliers}} inliers</figcaption>{{b1.p1.matrix}}</figure>
+      <figure><figcaption class="mono">I &middot; {{b1.p2.from}} &rarr; {{b1.p2.to}} &middot; {{b1.p2.inliers}} inliers</figcaption>{{b1.p2.matrix}}</figure>
+      <figure><figcaption class="mono">II &middot; {{b2.p1.from}} &rarr; {{b2.p1.to}} &middot; {{b2.p1.inliers}} inliers</figcaption>{{b2.p1.matrix}}</figure>
+      <figure><figcaption class="mono">II &middot; {{b2.p2.from}} &rarr; {{b2.p2.to}} &middot; {{b2.p2.inliers}} inliers</figcaption>{{b2.p2.matrix}}</figure>
+      <figure><figcaption class="mono">III &middot; {{b3.p1.from}} &rarr; {{b3.p1.to}} &middot; {{b3.p1.inliers}} inliers</figcaption>{{b3.p1.matrix}}</figure>
+      <figure><figcaption class="mono">III &middot; {{b3.p2.from}} &rarr; {{b3.p2.to}} &middot; {{b3.p2.inliers}} inliers</figcaption>{{b3.p2.matrix}}</figure>
+    </div>
+  </details>
+</section>
+
+<!-- ===================================================== 11 · AUTOMATIC MOSAICS -->
+<section id="automatic" class="sheet sheet--night sheet--stage" aria-labelledby="h-auto">
+  <header class="sec-head sec-head--center">
+    <p class="sec-num">11 <span>/ B.4 Automatic mosaics</span></p>
+    <h2 id="h-auto">The same world, <i>no hands</i></h2>
+    <p class="sec-lede">The automatic homographies go into the same warping, exposure matching and feathering as Part A. Drag each divider to compare the mosaic I clicked together with the one that built itself.</p>
+  </header>
+
+  <div class="prose prose--narrow">
+    <p>Each automatic mosaic chains its side frames to the middle frame exactly like the manual ones. To compare them fairly I render both on one shared canvas, the bounding box of both sets of warped corners, so the slider shows the same pixels on either side. Under each one are the numbers that say how far apart the two results are: how far my hand-picked points land from where the automatic homography sends them, and how far apart the two put the far corners of each side frame.</p>
+    <p class="live-only">On the live site each comparison below is one draggable slider between the manual and the automatic mosaic. The printed version shows the two mosaics side by side.</p>
+  </div>
+
+  <!-- PLATE II -->
+  <article class="plate-ex versus" id="auto-2">
+    <header class="plate-ex__head">
+      <p class="plate-ex__no">II</p>
+      <div>
+        <h3>{{b2.title}}</h3>
+        <p class="mono">manual: {{m2.p1.count}} + {{m2.p2.count}} clicked points &middot; automatic: {{b2.p1.inliers}} + {{b2.p2.inliers}} inliers &middot; shared canvas {{b2.size}} px</p>
+      </div>
+    </header>
+    <div class="compare compare--wide" data-compare style="--pos: 50%; --ar: {{b2.aspect}}">
+      <img class="compare__a" src="{{b2.manual}}" alt="Plate II stitched from hand-picked correspondences." loading="lazy">
+      <div class="compare__b"><img src="{{b2.auto}}" alt="Plate II stitched automatically." loading="lazy"></div>
+      <input class="compare__range" type="range" min="0" max="100" value="50" aria-label="Move the divider between the manual and the automatic mosaic of the building">
+      <div class="compare__handle" aria-hidden="true"><svg><use href="#aperture"/></svg></div>
+      <span class="compare__tag compare__tag--l mono">manual</span><span class="compare__tag compare__tag--r mono">automatic</span>
+    </div>
+    <div class="versus__bar"><button type="button" class="btn btn--ghost" data-open="{{b2.auto_full}}" data-alt="Automatic mosaic of the Zoology and Botany building at full resolution, two-band blend.">Automatic at full resolution (two-band)</button><span class="mono">drag, swipe or use arrow keys</span></div>
+    <div class="static-pair static-pair--versus">
+      <figure><img src="{{b2.print_manual}}" alt="Manual mosaic of the building." loading="lazy"><figcaption>Manual (Part A points)</figcaption></figure>
+      <figure><img src="{{b2.print_auto}}" alt="Automatic mosaic of the building." loading="lazy"><figcaption>Automatic</figcaption></figure>
+    </div>
+    <div class="versus__body">
+      <div class="versus__text">
+        <dl class="versus__stats">
+          <div><dt>hand-picked points vs automatic H</dt><dd>{{b2.p1.hand}} px <span>left</span> &middot; {{b2.p2.hand}} px <span>right</span></dd></div>
+          <div><dt>far corners of the side frames</dt><dd>{{b2.p1.corner_gap}} px <span>left</span> &middot; {{b2.p2.corner_gap}} px <span>right</span></dd></div>
+        </dl>
+        <p>The closest of the three. At this size the two mosaics are hard to tell apart, and my hand-picked points land only a few pixels from where the automatic homographies send them.</p>
+        <p>Zoomed in at the left seam there is a real difference, and it favours the manual version: the carved ZOOLOGY letters are slightly doubled in the automatic mosaic. The inlier figure above shows why. Most of the matched corners on that side are on the evergreen in front of the building, because foliage is full of corners. The tree is closer to the camera than the wall, so between the two frames it shifts a few pixels differently, and the automatic homography follows the tree. By hand I had only clicked points on the facade. The two-band blend from Part A hides the doubling, since it takes fine detail from one frame at a time.</p>
+      </div>
+      <div class="trio">
+        <figure><img src="{{b2.seam_manual}}" alt="Left seam of the building, manual mosaic: sharp ZOOLOGY lettering." loading="lazy"><figcaption class="mono">manual</figcaption></figure>
+        <figure><img src="{{b2.seam_auto}}" alt="Same crop from the automatic mosaic: the lettering is slightly doubled." loading="lazy"><figcaption class="mono">automatic</figcaption></figure>
+        <figure><img src="{{b2.seam_two}}" alt="Same crop from the automatic mosaic with the two-band blend: lettering single again." loading="lazy"><figcaption class="mono">automatic, two-band</figcaption></figure>
+      </div>
+    </div>
+  </article>
+
+  <!-- PLATE I -->
+  <article class="plate-ex versus plate-ex--flip" id="auto-1">
+    <header class="plate-ex__head">
+      <p class="plate-ex__no">I</p>
+      <div>
+        <h3>{{b1.title}}</h3>
+        <p class="mono">manual: {{m1.p1.count}} + {{m1.p2.count}} clicked points &middot; automatic: {{b1.p1.inliers}} + {{b1.p2.inliers}} inliers &middot; shared canvas {{b1.size}} px</p>
+      </div>
+    </header>
+    <div class="compare compare--wide" data-compare style="--pos: 50%; --ar: {{b1.aspect}}">
+      <img class="compare__a" src="{{b1.manual}}" alt="Plate I stitched from hand-picked correspondences." loading="lazy">
+      <div class="compare__b"><img src="{{b1.auto}}" alt="Plate I stitched automatically: the right frame is less stretched." loading="lazy"></div>
+      <input class="compare__range" type="range" min="0" max="100" value="50" aria-label="Move the divider between the manual and the automatic mosaic of the sunset">
+      <div class="compare__handle" aria-hidden="true"><svg><use href="#aperture"/></svg></div>
+      <span class="compare__tag compare__tag--l mono">manual</span><span class="compare__tag compare__tag--r mono">automatic</span>
+    </div>
+    <div class="versus__bar"><button type="button" class="btn btn--ghost" data-open="{{b1.auto_full}}" data-alt="Automatic mosaic of the sunset at full resolution, two-band blend.">Automatic at full resolution (two-band)</button><span class="mono">drag the divider all the way across to see the right frame change shape</span></div>
+    <div class="static-pair static-pair--versus">
+      <figure><img src="{{b1.print_manual}}" alt="Manual mosaic of the sunset." loading="lazy"><figcaption>Manual (Part A points)</figcaption></figure>
+      <figure><img src="{{b1.print_auto}}" alt="Automatic mosaic of the sunset." loading="lazy"><figcaption>Automatic</figcaption></figure>
+    </div>
+    <div class="versus__body">
+      <div class="versus__text">
+        <dl class="versus__stats">
+          <div><dt>hand-picked points vs automatic H</dt><dd>{{b1.p1.hand}} px <span>left</span> &middot; {{b1.p2.hand}} px <span>right</span></dd></div>
+          <div><dt>far corners of the side frames</dt><dd>{{b1.p1.corner_gap}} px <span>left</span> &middot; {{b1.p2.corner_gap}} px <span>right</span></dd></div>
+          <div><dt>distance from a pure rotation, right frame</dt><dd>{{b1.p2.stretch_manual}} <span>manual</span> &middot; {{b1.p2.stretch_auto}} <span>automatic</span> &middot; 1.00 <span>ideal</span></dd></div>
+        </dl>
+        <p>In the overlap the two agree to about a pixel, and both seams line up: the Golden Gate tower in the close-up is single in both. The difference is at the far right. The automatic mosaic stretches the apartment building much less, and the far corners of the right frame end up about {{b1.p2.corner_gap}}&nbsp;px from where my manual homography put them.</p>
+        <p>There is a way to tell which one is right. A camera that only rotates produces a homography of the form K&thinsp;R&thinsp;K<sup>&minus;1</sup>. With the focal length from the EXIF data I can undo the K's and look at what is left: for a pure rotation its largest and smallest singular values are equal, so their ratio is 1. The ratio is {{b1.p2.stretch_manual}} for my manual homography and {{b1.p2.stretch_auto}} for the automatic one. My {{b1.p2.handn}} hand-picked points for that pair all sat in the left quarter of the frame. That pins down the overlap and lets the far edge drift. The automatic fit rests on {{b1.p2.inliers}} inliers spread over the whole overlap. So here the automatic result is the better one, and it showed me what was off about plate I in Part A.</p>
+      </div>
+      <div class="trio trio--two">
+        <figure><img src="{{b1.seam_manual}}" alt="Right seam of the sunset, manual mosaic: the Golden Gate tower is single." loading="lazy"><figcaption class="mono">manual</figcaption></figure>
+        <figure><img src="{{b1.seam_auto}}" alt="Same crop from the automatic mosaic: equally well aligned." loading="lazy"><figcaption class="mono">automatic</figcaption></figure>
+      </div>
+    </div>
+  </article>
+
+  <!-- PLATE III -->
+  <article class="plate-ex versus" id="auto-3">
+    <header class="plate-ex__head">
+      <p class="plate-ex__no">III</p>
+      <div>
+        <h3>{{b3.title}}</h3>
+        <p class="mono">manual: {{m3.p1.count}} + {{m3.p2.count}} clicked points &middot; automatic: {{b3.p1.inliers}} + {{b3.p2.inliers}} inliers &middot; shared canvas {{b3.size}} px</p>
+      </div>
+    </header>
+    <div class="compare compare--wide" data-compare style="--pos: 50%; --ar: {{b3.aspect}}">
+      <img class="compare__a" src="{{b3.manual}}" alt="Plate III stitched from hand-picked correspondences." loading="lazy">
+      <div class="compare__b"><img src="{{b3.auto}}" alt="Plate III stitched automatically: the pillar is sharp and the seated customer is closer to a single figure." loading="lazy"></div>
+      <input class="compare__range" type="range" min="0" max="100" value="50" aria-label="Move the divider between the manual and the automatic mosaic of the tea shop">
+      <div class="compare__handle" aria-hidden="true"><svg><use href="#aperture"/></svg></div>
+      <span class="compare__tag compare__tag--l mono">manual</span><span class="compare__tag compare__tag--r mono">automatic</span>
+    </div>
+    <div class="versus__bar"><button type="button" class="btn btn--ghost" data-open="{{b3.auto_full}}" data-alt="Automatic mosaic of the tea shop at full resolution, two-band blend.">Automatic at full resolution (two-band)</button><span class="mono">watch the customers at the pillar as the divider passes them</span></div>
+    <div class="static-pair static-pair--versus">
+      <figure><img src="{{b3.print_manual}}" alt="Manual mosaic of the tea shop." loading="lazy"><figcaption>Manual (Part A points)</figcaption></figure>
+      <figure><img src="{{b3.print_auto}}" alt="Automatic mosaic of the tea shop." loading="lazy"><figcaption>Automatic</figcaption></figure>
+    </div>
+    <div class="versus__body">
+      <div class="versus__text">
+        <dl class="versus__stats">
+          <div><dt>hand-picked points vs automatic H</dt><dd>{{b3.p1.hand}} px <span>left</span> &middot; {{b3.p2.hand}} px <span>right</span></dd></div>
+          <div><dt>far corners of the side frames</dt><dd>{{b3.p1.corner_gap}} px <span>left</span> &middot; {{b3.p2.corner_gap}} px <span>right</span></dd></div>
+          <div><dt>RANSAC reseeded, right frame</dt><dd>{{b3.p2.seed}} px <span>far corners</span> &middot; {{b3.p2.seed_overlap}} px <span>inside the overlap</span></dd></div>
+        </dl>
+        <p>The hard set, and the most interesting comparison. Nothing in the caf&eacute; is far away, so no single homography fits the whole overlap. By hand I chose points on the back wall and the menu screens. RANSAC cannot know that. It goes with the largest group of matches that agree with each other. For the left pair that group is on the ceiling and along the counter ({{b3.p1.inliers}} inliers). For the right pair all {{b3.p2.inliers}} inliers lie in one narrow band on and around the concrete pillar, so the automatic homography lines up the pillar and the people sitting at it, and my wall points end up {{b3.p2.hand}}&nbsp;px away.</p>
+        <p>The close-up shows the trade. In my manual mosaic the screen on the wall is single while the pillar's edge and the customer are doubled. In the automatic one the pillar is clean and the customer is much closer to one person, and the screen on the wall behind them is now the part that is doubled. He is still not perfectly single, because he also moved between the two frames and no homography can undo that. Neither result is wrong; they are the two planes a homography can choose between. The third crop is the automatic mosaic with Part A's two-band blend, which takes fine detail from one frame at a time and cleans up most of what is left. The automatic choice has one weakness. Its inliers cover a strip only about {{b3.p2.strip}}&nbsp;px wide, and a homography fit on a narrow strip is loosely pinned down far away from it. Rerunning RANSAC with three other random seeds moves the far corners of the right frame by up to {{b3.p2.seed}}&nbsp;px, while points inside the overlap move by {{b3.p2.seed_overlap}}&nbsp;px. For the building the far corners move by at most {{b2.p2.seed}}&nbsp;px.</p>
+      </div>
+      <div class="trio trio--tall">
+        <figure><img src="{{b3.seam_manual}}" alt="Right seam of the tea shop, manual mosaic: wall screen single, pillar edge and customer doubled." loading="lazy"><figcaption class="mono">manual</figcaption></figure>
+        <figure><img src="{{b3.seam_auto}}" alt="Same crop from the automatic mosaic: pillar clean, customer nearly single, wall screen doubled." loading="lazy"><figcaption class="mono">automatic</figcaption></figure>
+        <figure><img src="{{b3.seam_two}}" alt="Same crop from the automatic mosaic with the two-band blend: one screen, one customer." loading="lazy"><figcaption class="mono">automatic, two-band</figcaption></figure>
+      </div>
+    </div>
+  </article>
+</section>
+
+<!-- ===================================================== 12 · SHOEBOX -->
+<section id="shoebox" class="sheet sheet--paper" aria-labelledby="h-shoebox">
+  <div class="sheet__edge sheet__edge--top" aria-hidden="true"></div>
+  <header class="sec-head sec-head--split">
+    <p class="sec-num">12 <span>/ B.5 Bells &amp; whistles: panorama recognition</span></p>
+    <h2 id="h-shoebox">Sorting the <i>shoebox</i></h2>
+    <p class="sec-lede">So far I told the code which photos belong together and in which order. For the extra I took that away too. All {{b.rec.n}} photos of the project go in as one unordered pile.</p>
+  </header>
+
+  <div class="prose prose--two">
+    <p>The pile is the nine frames from above, the two extra sunset frames from Part A's cylinder, and the two rectification photos, which do not belong to any panorama. I extract features for every photo and run the matcher and RANSAC on all {{b.rec.pairs}} pairs. Two photos count as overlapping when RANSAC finds at least {{b.rec.min}} inliers between them. The number is easy to pick. Unrelated photos never got more than {{b.rec.strongest_false}} inliers (four random matches always agree with their own homography, and now and then a fifth lands close), and the weakest real overlap has {{b.rec.weakest}}.</p>
+    <p>Linked photos form groups, and each group is a panorama: {{b.rec.panoramas}} of them, with the book and the menu left over. Inside a group I keep the strongest links as a tree, take the photo in the middle of the tree as the reference, and chain the homographies toward it. The left-to-right order falls out of where each photo lands. Nobody says in advance how wide a discovered panorama will be, so they are rendered on a cylinder with the mapper from Part A. The five-frame skyline is the same set I stitched by hand for Part A's extra, this time with no clicks and no order given.</p>
+  </div>
+
+  <div class="shoebox" data-shoebox>
+    <div class="shoebox__matrix" data-sb-matrix role="grid" aria-label="RANSAC inliers between every pair of photos"></div>
+    <aside class="shoebox__card">
+      <div class="shoebox__pair"><img alt="" data-sb-img="a"><img alt="" data-sb-img="b"></div>
+      <p class="mono shoebox__stat" data-sb-stat aria-live="polite">hover or tap a cell</p>
+      <p class="hand shoebox__verdict" data-sb-verdict></p>
+      <p class="shoebox__hint">Every cell is one pair of photos, and the number is how many matches RANSAC kept. Cells with at least {{b.rec.min}} are links. The photos are shown in the order the code found, panorama by panorama.</p>
+    </aside>
+    <p class="live-only">Interactive on the live site. The static matrix is below.</p>
+  </div>
+  <figure class="static-figs static-figs--one"><img src="{{b.rec.fig}}" alt="Matrix of RANSAC inlier counts between all pairs of photos: three bright blocks along the diagonal and single-digit counts everywhere else." loading="lazy"><figcaption>RANSAC inliers between every pair of the {{b.rec.n}} photos, in the order the code found. Real overlaps have {{b.rec.weakest}} or more; everything else has at most {{b.rec.strongest_false}}.</figcaption></figure>
+
+  <div class="found">
+    <figure class="found__main">
+      <button type="button" class="found__btn" data-open="{{b.rec.p1.full}}" aria-label="Open the automatically found skyline at full resolution"><img src="{{b.rec.p1.src}}" alt="Five sunset frames found, ordered and stitched automatically onto a cylinder: trees and rooftops on the left, the sun over the bay, an apartment building on the right." loading="lazy"></button>
+      <figcaption class="mono"><b>found 1</b> {{b.rec.p1.count}} photos &middot; {{b.rec.p1.frames}} &middot; reference {{b.rec.p1.reference}} &middot; {{b.rec.p1.size}} px</figcaption>
+    </figure>
+    <figure>
+      <button type="button" class="found__btn" data-open="{{b.rec.p2.full}}" aria-label="Open the second found panorama at full resolution"><img src="{{b.rec.p2.src}}" alt="Second panorama found automatically, on a cylinder." loading="lazy"></button>
+      <figcaption class="mono"><b>found 2</b> {{b.rec.p2.count}} photos &middot; {{b.rec.p2.frames}} &middot; reference {{b.rec.p2.reference}}</figcaption>
+    </figure>
+    <figure>
+      <button type="button" class="found__btn" data-open="{{b.rec.p3.full}}" aria-label="Open the third found panorama at full resolution"><img src="{{b.rec.p3.src}}" alt="Third panorama found automatically, on a cylinder." loading="lazy"></button>
+      <figcaption class="mono"><b>found 3</b> {{b.rec.p3.count}} photos &middot; {{b.rec.p3.frames}} &middot; reference {{b.rec.p3.reference}}</figcaption>
+    </figure>
+  </div>
+  <p class="aside-note">no clicks, no order given: the pile sorted itself.</p>
+  <div class="sheet__edge sheet__edge--bottom" aria-hidden="true"></div>
+</section>
+
+</div>
+
+<!-- ===================================================== 13 · BEHIND -->
 <section id="behind" class="sheet sheet--paper sheet--letter" aria-labelledby="h-behind">
   <div class="sheet__edge sheet__edge--top" aria-hidden="true"></div>
   <div class="letter">
-    <p class="sec-num">07 <span>/ reflection</span></p>
+    <p class="sec-num">13 <span>/ reflection</span></p>
     <h2 id="h-behind">Behind the <i>frame</i></h2>
     <div class="letter__body">
       <p>The biggest surprise was how much the result depended on the points rather than the code. Once <code>computeH</code> and the warps passed their tests, every visible problem in a mosaic traced back to a correspondence: a point on the wrong corner, or a point on something at a different depth from the rest. The per-point residuals were the most useful debugging tool I had. They flagged the pillar points in the caf&eacute; before I had looked at a single mosaic.</p>
@@ -779,16 +1232,22 @@
       <p>Nearest neighbor versus bilinear was less dramatic than I expected at normal size, because none of these warps enlarge the photo much. Zoomed in, the stair-steps are obvious, and bilinear costs about two and a half times as much. That is an easy trade for anything meant to be looked at.</p>
       <p>Feathering fixed the seams wherever the alignment was good (plate II is basically seamless) and made things worse in one specific way where it was not, by turning misalignment into ghosts. Exposure matching mattered more than I expected for the sunset. The cylinder extra showed how much of plate I's bow-tie was just the flat projection: with five frames the planar result is mostly empty canvas and smeared edges, and wrapping the same homographies around a cylinder fixed both. The caf&eacute; is the one limit no projection can fix; it really needed the phone to pivot more carefully about the lens.</p>
     </div>
+    <h3 class="letter__sub">After reel B</h3>
+    <div class="letter__body">
+      <p>Reel B changed how I see reel A. Clicking points felt like the careful, trustworthy way to do it, and for the building it was: my few facade points still beat a few hundred automatic matches that mostly landed on the tree in front. The sunset went the other way. There, hundreds of automatic matches spread over the whole overlap gave a more believable homography than eight careful clicks bunched into one corner, and measuring both against a pure camera rotation is what told me so.</p>
+      <p>The steps I expected to be hard were not. Harris was provided, a descriptor is a blur and a slice, and RANSAC is about fifteen lines. What took thought was everything around them: a strength threshold so that ANMS does not spend its budget on noise in the sky, enough interest points that the caf&eacute; still has something to match, and looking at where the inliers are before trusting a homography. RANSAC answers the question of which group of matches agrees the most. In the caf&eacute; that was a concrete pillar, not the wall I cared about.</p>
+      <p>The limits are the things I skipped on purpose. There is no rotation or scale invariance, so this works because every frame was taken level, from one spot, at one zoom. And a homography is still only right for a single plane, or for a camera that turns without moving.</p>
+    </div>
     <p class="hand letter__sign">more beyond the frame, always.</p>
-    <span class="letter__slate mono" aria-hidden="true">END OF REEL 1</span>
+    <span class="letter__slate mono" aria-hidden="true">END OF REEL B</span>
   </div>
   <div class="sheet__edge sheet__edge--bottom" aria-hidden="true"></div>
 </section>
 
-<!-- ===================================================== 08 · GALLERY -->
+<!-- ===================================================== 14 · GALLERY -->
 <section id="gallery" class="gallery" aria-labelledby="h-gallery">
   <header class="sec-head sec-head--center">
-    <p class="sec-num">08 <span>/ contact sheet</span></p>
+    <p class="sec-num">14 <span>/ contact sheet</span></p>
     <h2 id="h-gallery">Gallery</h2>
   </header>
   <div class="filmstrip">
@@ -796,6 +1255,8 @@
     <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="{{m2.full}}" aria-label="Open {{m2.title}} at full resolution"><img src="{{m2.src}}" alt="{{m2.title}}, final mosaic." loading="lazy"></button><figcaption class="mono"><b>II</b> {{m2.title}}</figcaption></figure>
     <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="{{sk.cyl.full}}" aria-label="Open the cylindrical skyline at full resolution"><img src="{{sk.cyl.src}}" alt="The whole horizon: five frames on a cylinder." loading="lazy"></button><figcaption class="mono"><b>IV</b> The Whole Horizon &middot; cylindrical</figcaption></figure>
     <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="{{m3.full}}" aria-label="Open {{m3.title}} at full resolution"><img src="{{m3.src}}" alt="{{m3.title}}, final mosaic (feathered)." loading="lazy"></button><figcaption class="mono"><b>III</b> {{m3.title}}</figcaption></figure>
+    <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="{{b.rec.p1.full}}" aria-label="Open the automatically found skyline at full resolution"><img src="{{b.rec.p1.src}}" alt="The whole horizon again: five frames found, ordered and stitched automatically." loading="lazy"></button><figcaption class="mono"><b>V</b> The Whole Horizon &middot; found and stitched automatically</figcaption></figure>
+    <figure class="filmstrip__frame"><button type="button" class="filmstrip__btn" data-open="{{b3.auto_full}}" aria-label="Open the automatic tea counter mosaic at full resolution"><img src="{{b3.auto}}" alt="{{m3.title}}, stitched automatically." loading="lazy"></button><figcaption class="mono"><b>VI</b> {{m3.title}} &middot; automatic</figcaption></figure>
   </div>
   <p class="closing">There's always more beyond the frame.</p>
   <svg class="closing__mask" aria-hidden="true"><use href="#mask"/></svg>
@@ -806,10 +1267,10 @@
 <footer class="footer">
   <div class="footer__row">
     <p class="footer__title">Mosaic <i>of</i> Memories</p>
-    <p class="mono">CS180 &middot; Project 4A &middot; Part A</p>
+    <p class="mono">CS180 &middot; Project 4 &middot; Parts A and B</p>
     <p><a href="{{site_url}}">{{site_url}}</a></p>
   </div>
-  <p class="footer__small">All photographs are my own. Every image on this page is an output of my Project 4A code or one of its input photos. Typefaces: Cormorant Garamond, Manrope, IBM Plex Mono and Caveat (SIL Open Font License, via Google Fonts). Textures, film details and icons are drawn in CSS and SVG for this page.</p>
+  <p class="footer__small">All photographs are my own. Every image on this page is an output of my Project 4 code or one of its input photos. Typefaces: Cormorant Garamond, Manrope, IBM Plex Mono and Caveat (SIL Open Font License, via Google Fonts). Textures, film details and icons are drawn in CSS and SVG for this page.</p>
   <svg class="footer__reel" aria-hidden="true"><use href="#reel"/></svg>
 </footer>
 
