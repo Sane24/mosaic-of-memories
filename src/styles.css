@@ -1314,6 +1314,10 @@ body::after { inset: 0; animation: none; mix-blend-mode: normal; opacity: .035; 
   .found { grid-template-columns: 1fr 1fr !important; }
   .trio--tall img { max-height: 62mm; }
   .versus { break-before: auto; margin: 0 0 6mm; }
+  #corners, #automatic { break-before: auto; }
+  .plate-ex__head { break-inside: avoid; break-after: avoid; }
+  .versus .static-pair--versus { break-before: avoid; }
+  #corners .sec-head, #automatic .sec-head { margin-top: 8mm; }
 }
 
 /* without JavaScript the Part B widgets have nothing to draw: show the static figures instead */
