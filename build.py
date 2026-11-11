@@ -2,9 +2,12 @@
 
     python build.py            # writes docs/ (the deployable static site)
 
-Reads ../outputs/manifest.json and the figures next to it, re-encodes them for
-the web, writes docs/assets/data.js for the interactive pieces, and fills the
-{{placeholders}} in src/index.html with the real numbers.
+    python build.py --html     # only re-render the page and copy css/js (after one full build)
+
+Reads ../outputs/manifest.json (Part A) and ../outputs/partb/manifest.json
+(Part B) with the figures next to them, re-encodes them for the web, writes
+docs/assets/data.js for the interactive pieces, and fills the {{placeholders}}
+in src/index.html with the real numbers.
 """
 
 from __future__ import annotations
@@ -12,10 +15,11 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import sys
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 HERE = Path(__file__).resolve().parent
 PROJECT = HERE.parent
@@ -33,6 +37,12 @@ TITLES = {"mosaic1": "Last Light Over the Bay",
           "mosaic2": "Zoology & Botany",
           "mosaic3": "Halloween at the Tea Counter"}
 ROMAN = {"mosaic1": "I", "mosaic2": "II", "mosaic3": "III"}
+CACHE = HERE / ".cache" / "build.json"
+
+# Part B seam close-ups, in reference-frame pixels (x0, y0, x1, y1).
+SEAM_B = {"mosaic1": (1250, 700, 1800, 1180),
+          "mosaic2": (60, 420, 760, 1020),
+          "mosaic3": (1050, 150, 1750, 1000)}
 
 
 # --------------------------------------------------------------------------
@@ -375,6 +385,166 @@ def build_skyline(sk: dict, values: dict, data: dict) -> None:
     data["skyline"] = out
 
 
+def bit(mask: str, k: int) -> int:
+    return 1 if mask[k] == "1" else 0
+
+
+def build_partb(pm: dict, a_data: dict, values: dict, data: dict) -> None:
+    """Part B: automatic stitching. a_data is the Part A site data (for the frame photos)."""
+    st = pm["settings"]
+    values.update({
+        "b.n_points": f"{st['n_points']:,}", "b.harris_min": f"{st['harris_min']:g}",
+        "b.ratio": f"{st['ratio']:g}", "b.eps": f"{st['ransac_eps']:g}",
+        "b.iters": f"{st['ransac_iters']:,}", "b.sigma": f"{st['blur_sigma']:g}",
+        "b.c_robust": f"{st['c_robust']:g}"})
+    out = {"settings": st, "mosaics": []}
+    a_mosaics = {m["name"]: m for m in a_data["mosaics"]}
+    cam = [f["cam"] for f in a_mosaics["mosaic1"]["frames"]]
+    values["b.ev_sunset"] = f"{np.log2(cam[0]['t'] * cam[0]['iso'] / (cam[1]['t'] * cam[1]['iso'])):.1f}"
+    for mo in pm["mosaics"]:
+        name, key = mo["name"], mo["name"][-1]
+        ref = mo["reference"]
+        web = json.loads((PROJECT / mo["outputs"]["web"]).read_text())
+        W, H = mo["canvas"]["width"], mo["canvas"]["height"]
+        ox, oy = mo["canvas"]["origin"]
+        entry = {"name": name, "title": TITLES[name], "roman": ROMAN[name], "reference": ref,
+                 "frames": [], "pairs": []}
+        for i, f in enumerate(mo["frames"]):
+            a_frame = a_mosaics[name]["frames"][i]
+            atlas = Image.open(PROJECT / f["figures"]["atlas"])
+            IMG.mkdir(parents=True, exist_ok=True)
+            atlas.save(IMG / f"b_{name}_atlas{i + 1}.png", optimize=True)
+            frame = {"file": f["file"], "src": a_frame["src"], "w": f["size"][0], "h": f["size"][1],
+                     "atlas": f"assets/img/b_{name}_atlas{i + 1}.png",
+                     "harris": f["harris"], "kept": f["points"], "radius": f["anms_radius"]}
+            if i == ref:
+                overlay = Image.open(PROJECT / f["figures"]["harris_overlay"]).convert("RGBA")
+                frame["overlay"] = save_webp(fit(overlay, 1600), f"b_{name}_harris.webp", quality=80)
+                frame["anms"] = [[round(x), round(y), min(9999, round(r))] for x, y, r in web["frames"][i]["anms"]]
+                frame["strongest"] = web["frames"][i]["strongest"]
+            entry["frames"].append(frame)
+            pre = f"b{key}.f{i + 1}"
+            values[f"{pre}.file"] = f["file"]
+            values[f"{pre}.all"] = f"{f['harris_all']:,}"
+            values[f"{pre}.harris"] = f"{f['harris']:,}"
+            values[f"{pre}.kept"] = f"{f['points']:,}"
+            values[f"{pre}.radius"] = f"{f['anms_radius']:.0f}"
+        ref_figs = mo["frames"][ref]["figures"]
+        values[f"b{key}.corners"] = save_jpg(fit(Image.open(PROJECT / ref_figs["corners"]).convert("RGB"), 2200),
+                                             f"b_{name}_corners.jpg", bg=(255, 255, 255))
+        values[f"b{key}.descriptors"] = save_jpg(
+            fit(Image.open(PROJECT / ref_figs["descriptors"]).convert("RGB"), 1800),
+            f"b_{name}_descriptors.jpg", bg=(255, 255, 255))
+        values[f"b{key}.title"] = TITLES[name]
+        values[f"b{key}.ref"] = mo["frames"][ref]["file"]
+
+        for k, (p, wp) in enumerate(zip(mo["pairs"], web["pairs"])):
+            cand = {ia: c for c, ia in enumerate(wp["ia"])}
+            nn = wp["nn"]
+            # one row per mutual nearest-neighbour pair: xa, ya, xb, yb, ratio x 1000, flags, index a, index b
+            # flags: 1 agrees with the final homography, 2 passed the ratio test, 4 RANSAC inlier
+            rows = []
+            for i, r in enumerate(nn["ratio"]):
+                c = cand.get(i)
+                if c is None and (nn["mutual"][i] != "1" or r >= .95):
+                    continue
+                flags = bit(nn["correct"], i) | (2 if c is not None else 0) | (4 if c is not None and bit(wp["inliers"], c) else 0)
+                (xa, ya), (xb, yb) = nn["pa"][i], nn["pb"][i]
+                rows.append([round(xa), round(ya), round(xb), round(yb), round(r * 1000), flags, i, nn["index"][i]])
+            cand_rows = [n for n, row in enumerate(rows) if row[5] & 2]
+            inlier_x = [row[0] for row in rows if row[5] & 4]
+            values[f"b{key}.p{k + 1}.strip"] = f"{np.percentile(inlier_x, 95) - np.percentile(inlier_x, 5):.0f}"
+            log = [{"it": e["iteration"], "s": [cand_rows[c] for c in e["sample"]],
+                    "n": e["inliers"].count("1"), "in": e["inliers"]} for e in wp["log"]]
+            figs = {}
+            for label in ("matches", "ransac", "patches"):
+                figs[label] = save_jpg(fit(Image.open(PROJECT / p["figures"][label]).convert("RGB"), 2000),
+                                       f"b_{name}_{label}_{k + 1}.jpg", bg=(255, 255, 255))
+            entry["pairs"].append({
+                "from": p["from"], "to": p["to"], "matches": p["matches"], "inliers": p["inliers"],
+                "err": p["error_mean"], "rows": rows, "cand": cand_rows, "log": log,
+                "matrix": matrix_html(p["H"])})
+            pre = f"b{key}.p{k + 1}"
+            values.update({
+                f"{pre}.from": mo["frames"][p["from"]]["file"], f"{pre}.to": mo["frames"][p["to"]]["file"],
+                f"{pre}.matches": str(p["matches"]), f"{pre}.inliers": str(p["inliers"]),
+                f"{pre}.outliers": str(p["matches"] - p["inliers"]),
+                f"{pre}.pct": f"{100 * p['inlier_fraction']:.0f}",
+                f"{pre}.err": f"{p['error_mean']:.2f}", f"{pre}.errmax": f"{p['error_max']:.2f}",
+                f"{pre}.need": f"{np.ceil(p['iterations_needed_99']):,.0f}",
+                f"{pre}.hand": f"{p['manual_under_auto_mean']:.1f}", f"{pre}.handmax": f"{p['manual_under_auto_max']:.1f}",
+                f"{pre}.handn": str(p["manual_points"]),
+                f"{pre}.overlap_gap": f"{p['overlap_gap_mean']:.1f}",
+                f"{pre}.corner_gap": f"{p['corner_gap_mean']:,.0f}",
+                f"{pre}.stretch_auto": f"{p['stretch_auto']:.2f}", f"{pre}.stretch_manual": f"{p['stretch_manual']:.2f}",
+                f"{pre}.seed": f"{p['seed_spread']:,.0f}",
+                f"{pre}.seed_overlap": f"{p['seed_spread_overlap']:.1f}",
+                f"{pre}.matrix": matrix_html(p["H"]),
+                f"{pre}.fig_matches": figs["matches"], f"{pre}.fig_ransac": figs["ransac"],
+                f"{pre}.fig_patches": figs["patches"]})
+
+        manual = open_rgba(mo["outputs"]["manual_feathered"])
+        auto = open_rgba(mo["outputs"]["auto_feathered"])
+        two = open_rgba(mo["outputs"]["auto_two_band"])
+        entry["manual"] = save_webp(fit(manual, 2400), f"b_{name}_manual_2400.webp")
+        entry["auto"] = save_webp(fit(auto, 2400), f"b_{name}_auto_2400.webp")
+        entry["auto_full"] = save_webp(fit(two, 5600), f"b_{name}_auto_full.webp", quality=80)
+        entry["aspect"] = W / H
+        entry["footprints"] = [[[x / W, y / H] for x, y in poly] for poly in mo["footprints_auto"]]
+        x0, y0, x1, y1 = SEAM_B[name]
+        box = (x0 - ox, y0 - oy, x1 - ox, y1 - oy)
+        values.update({
+            f"b{key}.manual": entry["manual"], f"b{key}.auto": entry["auto"], f"b{key}.auto_full": entry["auto_full"],
+            f"b{key}.aspect": f"{W / H:.4f}", f"b{key}.size": f"{W:,} &times; {H:,}",
+            f"b{key}.print_manual": save_jpg(fit(manual, 2000), f"b_{name}_manual_print.jpg", bg=(255, 255, 255)),
+            f"b{key}.print_auto": save_jpg(fit(auto, 2000), f"b_{name}_auto_print.jpg", bg=(255, 255, 255)),
+            f"b{key}.seam_manual": save_jpg(manual.crop(box), f"b_{name}_seam_manual.jpg", quality=90),
+            f"b{key}.seam_auto": save_jpg(auto.crop(box), f"b_{name}_seam_auto.jpg", quality=90),
+            f"b{key}.seam_two": save_jpg(two.crop(box), f"b_{name}_seam_two_band.jpg", quality=90),
+            f"b{key}.seam_aspect": f"{(x1 - x0) / (y1 - y0):.4f}"})
+        out["mosaics"].append(entry)
+
+    hist = pm["ratio_histogram"]
+    out["hist"] = {"correct": hist["correct"], "incorrect": hist["incorrect"]}
+    values.update({
+        "b.hist.fig": save_jpg(fit(Image.open(PROJECT / hist["figure"]).convert("RGB"), 1500), "b_ratio_histogram.jpg",
+                               bg=(255, 255, 255)),
+        "b.hist.n": f"{sum(hist['correct']) + sum(hist['incorrect']):,}",
+        "b.hist.n_correct": f"{sum(hist['correct']):,}",
+        "b.hist.kept_correct": f"{100 * hist['kept_correct']:.0f}",
+        "b.hist.kept_incorrect": f"{100 * hist['kept_incorrect']:.1f}"})
+
+    rec = pm["recognition"]
+    thumbs = []
+    for k, (folder, file) in enumerate(zip(rec["folders"], rec["files"])):
+        photo = ImageOps.exif_transpose(Image.open(PROJECT / "images" / folder / file)).convert("RGB")
+        thumbs.append(save_jpg(fit(photo, long_side=360), f"b_rec_thumb{k + 1}.jpg", quality=80))
+    groups, start = [], 0
+    for n, pano in enumerate(rec["panoramas"]):
+        im = open_rgba(pano["output"])
+        src = save_webp(fit(im, 2400), f"b_rec_panorama{n + 1}_2400.webp")
+        full = save_webp(fit(im, 6000), f"b_rec_panorama{n + 1}_full.webp", quality=80)
+        groups.append({"start": start, "count": len(pano["frames"]), "src": src, "full": full})
+        pre = f"b.rec.p{n + 1}"
+        values.update({
+            f"{pre}.src": src, f"{pre}.full": full, f"{pre}.count": str(len(pano["frames"])),
+            f"{pre}.size": f"{pano['width']:,} &times; {pano['height']:,}",
+            f"{pre}.aspect": f"{pano['width'] / pano['height']:.4f}",
+            f"{pre}.frames": ", ".join(pano["frames"]), f"{pre}.reference": pano["reference"],
+            f"{pre}.print": save_jpg(fit(im, 2000), f"b_rec_panorama{n + 1}_print.jpg", bg=(255, 255, 255))})
+        start += len(pano["frames"])
+    n = len(rec["photos"])
+    out["rec"] = {"photos": rec["photos"], "thumbs": thumbs, "inliers": rec["inliers"], "matches": rec["matches"],
+                  "min": rec["min_inliers"], "groups": groups}
+    values.update({
+        "b.rec.n": str(n), "b.rec.pairs": str(n * (n - 1) // 2), "b.rec.min": str(rec["min_inliers"]),
+        "b.rec.weakest": str(rec["weakest_link"]), "b.rec.strongest_false": str(rec["strongest_non_link"]),
+        "b.rec.panoramas": str(len(rec["panoramas"])), "b.rec.unmatched": str(len(rec["unmatched"])),
+        "b.rec.fig": save_jpg(fit(Image.open(PROJECT / rec["figure"]).convert("RGB"), 1500), "b_recognition_matrix.jpg",
+                              bg=(255, 255, 255))})
+    data["partb"] = out
+
+
 def render(template: str, values: dict) -> str:
     missing = set()
 
@@ -392,17 +562,24 @@ def render(template: str, values: dict) -> str:
 
 
 def main() -> None:
-    manifest = json.loads((OUTPUTS / "manifest.json").read_text())
-    if DOCS.exists():
-        shutil.rmtree(DOCS)
-    (DOCS / "assets").mkdir(parents=True)
-    values = {"site_url": SITE_URL, "site_url_short": SITE_URL.replace("https://", "").rstrip("/")}
-    data = {"mosaics": [], "rects": []}
-    for mo in manifest["mosaics"]:
-        build_mosaic(mo, values, data)
-    for r in manifest["rectifications"]:
-        build_rect(r, values, data)
-    build_skyline(manifest["skyline"], values, data)
+    if "--html" in sys.argv:
+        cached = json.loads(CACHE.read_text())
+        values, data = cached["values"], cached["data"]
+    else:
+        manifest = json.loads((OUTPUTS / "manifest.json").read_text())
+        if DOCS.exists():
+            shutil.rmtree(DOCS)
+        (DOCS / "assets").mkdir(parents=True)
+        values = {"site_url": SITE_URL, "site_url_short": SITE_URL.replace("https://", "").rstrip("/")}
+        data = {"mosaics": [], "rects": []}
+        for mo in manifest["mosaics"]:
+            build_mosaic(mo, values, data)
+        for r in manifest["rectifications"]:
+            build_rect(r, values, data)
+        build_skyline(manifest["skyline"], values, data)
+        build_partb(json.loads((OUTPUTS / "partb" / "manifest.json").read_text()), data, values, data)
+        CACHE.parent.mkdir(exist_ok=True)
+        CACHE.write_text(json.dumps({"values": values, "data": data}))
     (DOCS / "assets" / "data.js").write_text(
         "window.MOSAIC_DATA = " + json.dumps(data, separators=(",", ":")) + ";\n")
     for f in ("styles.css", "app.js"):
